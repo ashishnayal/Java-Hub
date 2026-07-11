@@ -1,0 +1,258 @@
+{
+  "title": "Design Patterns",
+  "slug": "design-patterns",
+  "category": "Advanced",
+  "difficulty": "Advanced",
+  "description": "Understand the most common GoF design patterns in Java: Singleton, Factory, Builder, Strategy, and Observer.",
+  "content": "## Design Patterns in Java\n\nDesign patterns are typical solutions to common problems in software design. The \"Gang of Four\" (GoF) defined 23 classic design patterns, categorized into three main groups:\n\n### 1. Creational Patterns\nFocus on object creation mechanisms, increasing flexibility and reuse of existing code.\n- **Singleton**: Ensures a class has only one instance.\n- **Factory Method**: Provides an interface for creating objects in a superclass.\n- **Abstract Factory**: Creates families of related objects without specifying concrete classes.\n- **Builder**: Constructs complex objects step by step.\n- **Prototype**: Copies existing objects without depending on their classes.\n\n### 2. Structural Patterns\nFocus on how to assemble objects and classes into larger structures.\n- **Adapter**: Allows incompatible interfaces to collaborate.\n- **Bridge**: Splits a large class into two separate hierarchies (abstraction and implementation).\n- **Composite**: Composes objects into tree structures to represent part-whole hierarchies.\n- **Decorator**: Dynamically attaches new behaviors to objects.\n- **Facade**: Provides a simplified interface to a complex system.\n- **Flyweight**: Minimizes memory usage by sharing common data across similar objects.\n- **Proxy**: Provides a surrogate or placeholder to control access to another object.\n\n### 3. Behavioral Patterns\nFocus on effective communication and the assignment of responsibilities between objects.\n- **Chain of Responsibility**: Passes requests along a chain of handlers.\n- **Command**: Encapsulates a request as a stand-alone object.\n- **Interpreter**: Evaluates language grammar or expressions.\n- **Iterator**: Traverses elements of a collection without exposing its representation.\n- **Mediator**: Reduces direct communications between objects by forcing them to collaborate via a mediator object.\n- **Memento**: Captures and restores an object's internal state.\n- **Observer**: Defines a subscription mechanism to notify multiple objects of state changes.\n- **State**: Allows an object to alter its behavior when its internal state changes.\n- **Strategy**: Defines a family of interchangeable algorithms.\n- **Template Method**: Defines the skeleton of an algorithm in a superclass, letting subclasses override specific steps.\n- **Visitor**: Separates an algorithm from an object structure on which it operates.",
+  "codeExamples": [
+    {
+      "title": "1. Singleton Pattern",
+      "language": "java",
+      "code": "public class Main {\n    public static void main(String[] args) {\n        Database db1 = Database.getInstance();\n        Database db2 = Database.getInstance();\n        System.out.println(\"Same instance? \" + (db1 == db2));\n    }\n}\n\nclass Database {\n    private static Database instance;\n    private Database() { System.out.println(\"Database created.\"); }\n    public static Database getInstance() {\n        if (instance == null) instance = new Database();\n        return instance;\n    }\n}",
+      "explanation": "Ensures only one instance of the Database class is created and shared globally."
+    },
+    {
+      "title": "2. Factory Method Pattern",
+      "language": "java",
+      "code": "interface Button { void render(); }\nclass WindowsButton implements Button { public void render() { System.out.println(\"Windows Button\"); } }\nclass MacButton implements Button { public void render() { System.out.println(\"Mac Button\"); } }\n\nabstract class Dialog {\n    abstract Button createButton();\n    public void renderWindow() {\n        Button b = createButton();\n        b.render();\n    }\n}\n\nclass WindowsDialog extends Dialog { Button createButton() { return new WindowsButton(); } }\n\npublic class Main {\n    public static void main(String[] args) {\n        Dialog dialog = new WindowsDialog();\n        dialog.renderWindow();\n    }\n}",
+      "explanation": "Delegates object creation to subclasses via an abstract factory method."
+    },
+    {
+      "title": "3. Abstract Factory Pattern",
+      "language": "java",
+      "code": "interface GUIFactory { Button createButton(); Checkbox createCheckbox(); }\ninterface Button { void paint(); }\ninterface Checkbox { void paint(); }\n\nclass WinFactory implements GUIFactory {\n    public Button createButton() { return () -> System.out.println(\"WinButton\"); }\n    public Checkbox createCheckbox() { return () -> System.out.println(\"WinCheckbox\"); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        GUIFactory factory = new WinFactory();\n        factory.createButton().paint();\n        factory.createCheckbox().paint();\n    }\n}",
+      "explanation": "Provides an interface for creating families of related or dependent objects without specifying their concrete classes."
+    },
+    {
+      "title": "4. Builder Pattern",
+      "language": "java",
+      "code": "class User {\n    private String name;\n    private int age;\n    private User(Builder b) { this.name = b.name; this.age = b.age; }\n    \n    public static class Builder {\n        private String name; private int age;\n        public Builder(String name) { this.name = name; }\n        public Builder age(int age) { this.age = age; return this; }\n        public User build() { return new User(this); }\n    }\n    public void print() { System.out.println(\"User: \" + name + \", \" + age); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        User u = new User.Builder(\"Alice\").age(30).build();\n        u.print();\n    }\n}",
+      "explanation": "Separates the construction of a complex object from its representation, allowing step-by-step building."
+    },
+    {
+      "title": "5. Prototype Pattern",
+      "language": "java",
+      "code": "class Shape implements Cloneable {\n    public String type;\n    public Shape clone() {\n        try { return (Shape) super.clone(); } \n        catch (CloneNotSupportedException e) { return null; }\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Shape s1 = new Shape();\n        s1.type = \"Circle\";\n        Shape s2 = s1.clone();\n        System.out.println(\"S1 type: \" + s1.type + \", S2 type: \" + s2.type);\n        System.out.println(\"Same object? \" + (s1 == s2));\n    }\n}",
+      "explanation": "Creates new objects by copying an existing object, known as the prototype."
+    },
+    {
+      "title": "6. Adapter Pattern",
+      "language": "java",
+      "code": "interface USB { void plugUSB(); }\nclass MicroUSB { public void plugMicro() { System.out.println(\"MicroUSB plugged\"); } }\n\nclass USBAdapter implements USB {\n    private MicroUSB micro;\n    public USBAdapter(MicroUSB micro) { this.micro = micro; }\n    public void plugUSB() { micro.plugMicro(); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        MicroUSB micro = new MicroUSB();\n        USB adapter = new USBAdapter(micro);\n        adapter.plugUSB();\n    }\n}",
+      "explanation": "Allows incompatible interfaces to work together by wrapping the adaptee."
+    },
+    {
+      "title": "7. Bridge Pattern",
+      "language": "java",
+      "code": "interface Color { void applyColor(); }\nclass Red implements Color { public void applyColor() { System.out.println(\"Red\"); } }\n\nabstract class Shape {\n    protected Color color;\n    public Shape(Color c) { this.color = c; }\n    abstract void draw();\n}\n\nclass Circle extends Shape {\n    public Circle(Color c) { super(c); }\n    public void draw() { System.out.print(\"Drawing Circle in \"); color.applyColor(); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Shape redCircle = new Circle(new Red());\n        redCircle.draw();\n    }\n}",
+      "explanation": "Decouples an abstraction from its implementation so the two can vary independently."
+    },
+    {
+      "title": "8. Composite Pattern",
+      "language": "java",
+      "code": "import java.util.*;\n\ninterface Component { void showPrice(); }\nclass Leaf implements Component {\n    String name; int price;\n    public Leaf(String n, int p) { name=n; price=p; }\n    public void showPrice() { System.out.println(name + \" : \" + price); }\n}\n\nclass Composite implements Component {\n    String name;\n    List<Component> comps = new ArrayList<>();\n    public Composite(String n) { name=n; }\n    public void addComponent(Component c) { comps.add(c); }\n    public void showPrice() {\n        System.out.println(\"Node: \" + name);\n        for(Component c : comps) c.showPrice();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Component hd = new Leaf(\"HDD\", 4000);\n        Component mouse = new Leaf(\"Mouse\", 500);\n        Composite peri = new Composite(\"Peripheral\");\n        peri.addComponent(mouse);\n        Composite comp = new Composite(\"Computer\");\n        comp.addComponent(hd);\n        comp.addComponent(peri);\n        comp.showPrice();\n    }\n}",
+      "explanation": "Treats individual objects and compositions of objects uniformly in a tree structure."
+    },
+    {
+      "title": "9. Decorator Pattern",
+      "language": "java",
+      "code": "interface Coffee { int getCost(); }\nclass SimpleCoffee implements Coffee { public int getCost() { return 5; } }\n\nabstract class CoffeeDecorator implements Coffee {\n    protected Coffee decoratedCoffee;\n    public CoffeeDecorator(Coffee c) { decoratedCoffee = c; }\n    public int getCost() { return decoratedCoffee.getCost(); }\n}\n\nclass Milk extends CoffeeDecorator {\n    public Milk(Coffee c) { super(c); }\n    public int getCost() { return super.getCost() + 2; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Coffee c = new SimpleCoffee();\n        System.out.println(\"Cost: \" + c.getCost());\n        c = new Milk(c);\n        System.out.println(\"With Milk: \" + c.getCost());\n    }\n}",
+      "explanation": "Dynamically adds responsibilities to an object by wrapping it."
+    },
+    {
+      "title": "10. Facade Pattern",
+      "language": "java",
+      "code": "class CPU { public void freeze() { System.out.println(\"CPU Freeze\"); } public void jump() { System.out.println(\"CPU Jump\"); } }\nclass Memory { public void load() { System.out.println(\"Memory Load\"); } }\nclass HardDrive { public void read() { System.out.println(\"Drive Read\"); } }\n\nclass ComputerFacade {\n    private CPU cpu = new CPU();\n    private Memory memory = new Memory();\n    private HardDrive hd = new HardDrive();\n    public void start() {\n        cpu.freeze();\n        hd.read();\n        memory.load();\n        cpu.jump();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ComputerFacade computer = new ComputerFacade();\n        computer.start();\n    }\n}",
+      "explanation": "Provides a unified, simplified interface to a complex subsystem."
+    },
+    {
+      "title": "11. Flyweight Pattern",
+      "language": "java",
+      "code": "import java.util.*;\n\nclass TreeType { // Intrinsic, shared state\n    private String name, color;\n    public TreeType(String n, String c) { name=n; color=c; }\n    public void draw(int x, int y) { System.out.println(\"Drawing \" + name + \" at \" + x + \",\" + y); }\n}\n\nclass TreeFactory {\n    static Map<String, TreeType> types = new HashMap<>();\n    public static TreeType getTreeType(String name, String color) {\n        TreeType result = types.get(name);\n        if(result == null) {\n            result = new TreeType(name, color);\n            types.put(name, result);\n        }\n        return result;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TreeType t1 = TreeFactory.getTreeType(\"Oak\", \"Green\");\n        TreeType t2 = TreeFactory.getTreeType(\"Oak\", \"Green\");\n        t1.draw(10, 20);\n        t2.draw(50, 60);\n        System.out.println(\"Same shared object? \" + (t1 == t2));\n    }\n}",
+      "explanation": "Minimizes memory usage by sharing common intrinsic state across multiple objects."
+    },
+    {
+      "title": "12. Proxy Pattern",
+      "language": "java",
+      "code": "interface Image { void display(); }\nclass RealImage implements Image {\n    private String file;\n    public RealImage(String f) { file=f; load(); }\n    private void load() { System.out.println(\"Loading \" + file); }\n    public void display() { System.out.println(\"Displaying \" + file); }\n}\n\nclass ProxyImage implements Image {\n    private RealImage realImage;\n    private String file;\n    public ProxyImage(String f) { file=f; }\n    public void display() {\n        if(realImage == null) realImage = new RealImage(file);\n        realImage.display();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Image img = new ProxyImage(\"test.jpg\");\n        // Image loaded only on first display\n        img.display(); \n        img.display();\n    }\n}",
+      "explanation": "Provides a surrogate object to control access to the real subject (e.g., lazy loading)."
+    },
+    {
+      "title": "13. Chain of Responsibility Pattern",
+      "language": "java",
+      "code": "abstract class Logger {\n    public static int INFO = 1, DEBUG = 2;\n    protected int level;\n    protected Logger next;\n    public void setNext(Logger l) { next = l; }\n    public void logMessage(int lvl, String msg) {\n        if(this.level <= lvl) write(msg);\n        if(next != null) next.logMessage(lvl, msg);\n    }\n    abstract void write(String msg);\n}\n\nclass ConsoleLogger extends Logger {\n    public ConsoleLogger(int lvl) { this.level = lvl; }\n    void write(String msg) { System.out.println(\"Console: \" + msg); }\n}\n\nclass FileLogger extends Logger {\n    public FileLogger(int lvl) { this.level = lvl; }\n    void write(String msg) { System.out.println(\"File: \" + msg); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Logger chain = new ConsoleLogger(Logger.INFO);\n        chain.setNext(new FileLogger(Logger.DEBUG));\n        \n        chain.logMessage(Logger.INFO, \"Information\");\n        System.out.println(\"---\");\n        chain.logMessage(Logger.DEBUG, \"Debug info\");\n    }\n}",
+      "explanation": "Passes requests along a chain of handlers. Each handler decides to process or pass it along."
+    },
+    {
+      "title": "14. Command Pattern",
+      "language": "java",
+      "code": "interface Command { void execute(); }\nclass Light { public void on() { System.out.println(\"Light ON\"); } }\nclass LightOnCommand implements Command {\n    Light light;\n    public LightOnCommand(Light l) { light = l; }\n    public void execute() { light.on(); }\n}\n\nclass RemoteControl {\n    Command command;\n    public void setCommand(Command c) { command = c; }\n    public void pressButton() { command.execute(); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Light lamp = new Light();\n        Command turnOn = new LightOnCommand(lamp);\n        \n        RemoteControl remote = new RemoteControl();\n        remote.setCommand(turnOn);\n        remote.pressButton();\n    }\n}",
+      "explanation": "Encapsulates a request as an object, allowing parameterization of clients, queueing, and undo support."
+    },
+    {
+      "title": "15. Interpreter Pattern",
+      "language": "java",
+      "code": "interface Expression { boolean interpret(String context); }\nclass TerminalExpression implements Expression {\n    String data;\n    public TerminalExpression(String data) { this.data = data; }\n    public boolean interpret(String context) { return context.contains(data); }\n}\n\nclass OrExpression implements Expression {\n    Expression e1, e2;\n    public OrExpression(Expression e1, Expression e2) { this.e1 = e1; this.e2 = e2; }\n    public boolean interpret(String context) { return e1.interpret(context) || e2.interpret(context); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Expression isJava = new TerminalExpression(\"Java\");\n        Expression isSpring = new TerminalExpression(\"Spring\");\n        Expression isJavaOrSpring = new OrExpression(isJava, isSpring);\n        \n        System.out.println(\"Is Java present? \" + isJavaOrSpring.interpret(\"I love Java\"));\n        System.out.println(\"Is C++ present? \" + isJavaOrSpring.interpret(\"I love C++\"));\n    }\n}",
+      "explanation": "Defines a representation for a grammar and an interpreter to interpret sentences."
+    },
+    {
+      "title": "16. Iterator Pattern",
+      "language": "java",
+      "code": "interface Iterator { boolean hasNext(); Object next(); }\ninterface Container { Iterator getIterator(); }\n\nclass NameRepository implements Container {\n    public String names[] = {\"John\", \"Jane\", \"Alice\"};\n    public Iterator getIterator() {\n        return new Iterator() {\n            int index;\n            public boolean hasNext() { return index < names.length; }\n            public Object next() { return hasNext() ? names[index++] : null; }\n        };\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        NameRepository repo = new NameRepository();\n        for(Iterator it = repo.getIterator(); it.hasNext();) {\n            System.out.println(\"Name: \" + it.next());\n        }\n    }\n}",
+      "explanation": "Provides a way to access elements of a collection sequentially without exposing its underlying representation."
+    },
+    {
+      "title": "17. Mediator Pattern",
+      "language": "java",
+      "code": "class ChatRoom {\n    public static void showMessage(User user, String msg) {\n        System.out.println(\"[\" + user.getName() + \"]: \" + msg);\n    }\n}\n\nclass User {\n    private String name;\n    public User(String name) { this.name = name; }\n    public String getName() { return name; }\n    public void sendMessage(String msg) { ChatRoom.showMessage(this, msg); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        User alice = new User(\"Alice\");\n        User bob = new User(\"Bob\");\n        \n        alice.sendMessage(\"Hi Bob!\");\n        bob.sendMessage(\"Hello Alice!\");\n    }\n}",
+      "explanation": "Reduces direct coupling by having objects communicate strictly through a mediator."
+    },
+    {
+      "title": "18. Memento Pattern",
+      "language": "java",
+      "code": "import java.util.*;\n\nclass Memento {\n    private String state;\n    public Memento(String s) { state = s; }\n    public String getState() { return state; }\n}\n\nclass Originator {\n    private String state;\n    public void setState(String s) { state = s; }\n    public String getState() { return state; }\n    public Memento saveStateToMemento() { return new Memento(state); }\n    public void getStateFromMemento(Memento m) { state = m.getState(); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Originator o = new Originator();\n        List<Memento> history = new ArrayList<>();\n        \n        o.setState(\"State 1\");\n        o.setState(\"State 2\");\n        history.add(o.saveStateToMemento()); // Save State 2\n        \n        o.setState(\"State 3\");\n        System.out.println(\"Current: \" + o.getState());\n        \n        o.getStateFromMemento(history.get(0)); // Restore\n        System.out.println(\"Restored: \" + o.getState());\n    }\n}",
+      "explanation": "Captures and restores an object's internal state without violating encapsulation."
+    },
+    {
+      "title": "19. Observer Pattern",
+      "language": "java",
+      "code": "import java.util.*;\n\nclass Subject {\n    private List<Observer> observers = new ArrayList<>();\n    private int state;\n    public int getState() { return state; }\n    public void setState(int s) { state = s; notifyAllObservers(); }\n    public void attach(Observer o) { observers.add(o); }\n    public void notifyAllObservers() { for(Observer o : observers) o.update(); }\n}\n\nabstract class Observer {\n    protected Subject subject;\n    public abstract void update();\n}\n\nclass HexObserver extends Observer {\n    public HexObserver(Subject s) { this.subject = s; this.subject.attach(this); }\n    public void update() { System.out.println(\"Hex String: \" + Integer.toHexString(subject.getState())); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Subject sub = new Subject();\n        new HexObserver(sub);\n        System.out.println(\"State change: 15\");\n        sub.setState(15);\n    }\n}",
+      "explanation": "Defines a one-to-many dependency so that when one object changes state, its dependents are notified."
+    },
+    {
+      "title": "20. State Pattern",
+      "language": "java",
+      "code": "interface State { void doAction(Context c); }\n\nclass StartState implements State {\n    public void doAction(Context c) { System.out.println(\"In Start State\"); c.setState(this); }\n}\n\nclass StopState implements State {\n    public void doAction(Context c) { System.out.println(\"In Stop State\"); c.setState(this); }\n}\n\nclass Context {\n    private State state;\n    public void setState(State s) { state = s; }\n    public State getState() { return state; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Context context = new Context();\n        State start = new StartState();\n        start.doAction(context);\n        \n        State stop = new StopState();\n        stop.doAction(context);\n    }\n}",
+      "explanation": "Allows an object to alter its behavior when its internal state changes."
+    },
+    {
+      "title": "21. Strategy Pattern",
+      "language": "java",
+      "code": "interface Strategy { int execute(int a, int b); }\nclass Add implements Strategy { public int execute(int a, int b) { return a + b; } }\nclass Multiply implements Strategy { public int execute(int a, int b) { return a * b; } }\n\nclass Context {\n    private Strategy strategy;\n    public Context(Strategy s) { strategy = s; }\n    public int executeStrategy(int a, int b) { return strategy.execute(a, b); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Context ctx = new Context(new Add());\n        System.out.println(\"10 + 5 = \" + ctx.executeStrategy(10, 5));\n        \n        ctx = new Context(new Multiply());\n        System.out.println(\"10 * 5 = \" + ctx.executeStrategy(10, 5));\n    }\n}",
+      "explanation": "Encapsulates a family of algorithms and makes them interchangeable."
+    },
+    {
+      "title": "22. Template Method Pattern",
+      "language": "java",
+      "code": "abstract class Game {\n    abstract void initialize();\n    abstract void startPlay();\n    abstract void endPlay();\n    // Template method\n    public final void play() {\n        initialize();\n        startPlay();\n        endPlay();\n    }\n}\n\nclass Cricket extends Game {\n    void initialize() { System.out.println(\"Cricket Initialized!\"); }\n    void startPlay() { System.out.println(\"Cricket Started!\"); }\n    void endPlay() { System.out.println(\"Cricket Finished!\"); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Game game = new Cricket();\n        game.play();\n    }\n}",
+      "explanation": "Defines the skeleton of an algorithm in a base class but lets subclasses override specific steps."
+    },
+    {
+      "title": "23. Visitor Pattern",
+      "language": "java",
+      "code": "interface ComputerPart { void accept(ComputerPartVisitor v); }\nclass Mouse implements ComputerPart { public void accept(ComputerPartVisitor v) { v.visit(this); } }\nclass Keyboard implements ComputerPart { public void accept(ComputerPartVisitor v) { v.visit(this); } }\n\ninterface ComputerPartVisitor {\n    void visit(Mouse m);\n    void visit(Keyboard k);\n}\n\nclass DisplayVisitor implements ComputerPartVisitor {\n    public void visit(Mouse m) { System.out.println(\"Displaying Mouse\"); }\n    public void visit(Keyboard k) { System.out.println(\"Displaying Keyboard\"); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ComputerPart mouse = new Mouse();\n        ComputerPart kb = new Keyboard();\n        \n        ComputerPartVisitor visitor = new DisplayVisitor();\n        mouse.accept(visitor);\n        kb.accept(visitor);\n    }\n}",
+      "explanation": "Lets you separate algorithms from the objects on which they operate."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the Singleton Pattern and how do you make it thread-safe?",
+      "answer": "The Singleton pattern ensures that a class has only one globally accessible instance. To implement it, you make the constructor private, declare a static private instance, and provide a public static `getInstance()` method. To make it thread-safe in a multi-threaded environment (without severe performance hits), you use Double-Checked Locking with the `volatile` keyword, or more simply, use a `enum` which is inherently thread-safe and serialization-safe.",
+      "example": "public class Singleton {\n    private static volatile Singleton instance;\n    private Singleton() {}\n    public static Singleton getInstance() {\n        if (instance == null) {\n            synchronized (Singleton.class) {\n                if (instance == null) instance = new Singleton();\n            }\n        }\n        return instance;\n    }\n}"
+    },
+    {
+      "question": "What are the drawbacks of the Singleton pattern?",
+      "answer": "Singletons are often considered an anti-pattern in modern development for several reasons: 1) They introduce a global state, making the application unpredictable and tightly coupled. 2) They severely hinder unit testing because it's difficult to mock them or reset their state between tests. 3) They violate the Single Responsibility Principle by controlling their own creation and lifecycle. In modern Java, Dependency Injection (like Spring IoC) is preferred over manual Singletons.",
+      "example": "// Hard to test because DatabaseConnection is hardcoded globally\nclass UserService {\n    public void save() {\n        DatabaseConnection.getInstance().execute(\"INSERT...\"); \n    }\n}"
+    },
+    {
+      "question": "Explain the Factory Method Pattern.",
+      "answer": "The Factory Method is a creational pattern that provides an interface for creating objects in a superclass, but allows subclasses to alter the type of objects that will be created. It encapsulates the instantiation logic, meaning the client code doesn't need to use the `new` keyword and doesn't need to know the exact concrete classes. This loosely couples the client from the implementation.",
+      "example": "interface Document { void open(); }\nclass PdfDoc implements Document { public void open() {} }\n\n// Factory\nclass DocumentFactory {\n    public static Document createDoc(String type) {\n        if (type.equals(\"PDF\")) return new PdfDoc();\n        throw new IllegalArgumentException(\"Unknown type\");\n    }\n}"
+    },
+    {
+      "question": "What is the Builder Pattern and when should you use it?",
+      "answer": "The Builder pattern is a creational pattern used to construct complex objects step by step. It separates the construction of a complex object from its representation. You should use it when a class has a massive constructor with many parameters (the Telescoping Constructor anti-pattern), especially when many of those parameters are optional. It results in highly readable and fluent client code.",
+      "example": "User user = new User.Builder(\"Alice\") // Required\n    .age(30)                          // Optional\n    .phone(\"123-4567\")                // Optional\n    .build();"
+    },
+    {
+      "question": "How does the Observer Pattern work?",
+      "answer": "The Observer pattern is a behavioral pattern where an object (the Subject) maintains a list of dependents (Observers) and notifies them automatically of any state changes, usually by calling one of their methods. It defines a one-to-many dependency. It is heavily used in Event-Driven architectures, GUI frameworks (like JavaFX button clicks), and modern reactive libraries.",
+      "example": "interface Observer { void update(String message); }\n\nclass Subject {\n    List<Observer> observers = new ArrayList<>();\n    void addObserver(Observer o) { observers.add(o); }\n    void notifyAll(String msg) {\n        for (Observer o : observers) o.update(msg);\n    }\n}"
+    },
+    {
+      "question": "Explain the Strategy Pattern.",
+      "answer": "The Strategy pattern is a behavioral pattern that lets you define a family of algorithms (strategies), put each of them into a separate class, and make their objects interchangeable. The original object (Context) delegates the work to a linked strategy object. The strategy can be altered at runtime, allowing the Context to change its behavior dynamically without relying on massive `if/else` or `switch` statements.",
+      "example": "// Context has a PaymentStrategy\n// It can use CreditCardPayment or PayPalPayment at runtime.\ncart.setStrategy(new PayPalPayment());\ncart.checkout();"
+    },
+    {
+      "question": "What is the Decorator Pattern?",
+      "answer": "The Decorator pattern is a structural pattern that allows you to dynamically attach new behaviors to an object by placing it inside special wrapper objects (decorators). Both the original object and the decorator implement the same interface. The decorator delegates work to the wrapped object but adds its own behavior before or after the delegation. Java's `java.io` package (like `BufferedReader(new FileReader())`) heavily uses this.",
+      "example": "Coffee coffee = new SimpleCoffee();\n// Wrap it in milk\ncoffee = new MilkDecorator(coffee); \n// Wrap it in sugar\ncoffee = new SugarDecorator(coffee);\nSystem.out.println(coffee.getCost()); // Computes combined cost"
+    },
+    {
+      "question": "What is the Facade Pattern?",
+      "answer": "The Facade pattern is a structural pattern that provides a simplified, higher-level interface to a complex subsystem containing many moving parts. Instead of forcing the client to interact with dozens of intricate classes, the Facade acts as a single entry point that orchestrates the subsystem behind the scenes. It reduces coupling and makes the subsystem easier to use.",
+      "example": "class VideoConverterFacade {\n    // Hides complex AudioExtractor, VideoEncoder, FileMuxer classes\n    public File convert(String filename, String format) {\n        // internal complex orchestration\n        return new File(\"converted.mp4\");\n    }\n}"
+    },
+    {
+      "question": "Explain the Adapter Pattern.",
+      "answer": "The Adapter is a structural pattern that allows objects with incompatible interfaces to collaborate. It acts as a wrapper that translates calls from the client's format into the format expected by the legacy or third-party service. Think of it like a physical power adapter that allows a European plug to fit into a US wall socket.",
+      "example": "// Target Interface: XMLProcessor (Client wants XML)\n// Adaptee: JSONLibrary (Only understands JSON)\n\nclass JsonToXmlAdapter implements XMLProcessor {\n    private JSONLibrary lib;\n    public void processXML(String xml) {\n        String json = convertXmlToJson(xml);\n        lib.processJson(json);\n    }\n}"
+    },
+    {
+      "question": "What is the difference between Decorator and Adapter?",
+      "answer": "While both use composition (wrapping an object), their intent is fundamentally different. An **Adapter** changes an object's interface to make it compatible with another interface, but it doesn't add new behavior. A **Decorator** keeps the original interface exactly the same, but it *adds* or *enhances* the behavior of the wrapped object.",
+      "example": "// Adapter: Changes interface shape (SquarePeg in RoundHole)\n// Decorator: Keeps shape, adds behavior (Coffee + Milk)"
+    },
+    {
+      "question": "What is the Command Pattern?",
+      "answer": "The Command pattern is a behavioral pattern that turns a request or an action into a stand-alone object containing all information about the request. This transformation lets you pass requests as method arguments, delay or queue a request's execution, and support undoable operations. It decouples the object that invokes the operation from the object that knows how to perform it.",
+      "example": "interface Command { void execute(); void undo(); }\nclass LightOnCommand implements Command {\n    Light light;\n    public void execute() { light.turnOn(); }\n    public void undo() { light.turnOff(); }\n}"
+    },
+    {
+      "question": "Explain the Prototype Pattern.",
+      "answer": "The Prototype pattern is a creational pattern that lets you copy existing objects without making your code dependent on their specific classes. Instead of instantiating a class from scratch (which might be costly or complex), you delegate the cloning process to the actual objects that are being cloned. In Java, this is typically implemented using the `Cloneable` interface and overriding the `clone()` method.",
+      "example": "class Shape implements Cloneable {\n    @Override\n    public Shape clone() {\n        return (Shape) super.clone();\n    }\n}"
+    },
+    {
+      "question": "What is the Proxy Pattern?",
+      "answer": "The Proxy pattern is a structural pattern that provides a surrogate or placeholder for another object to control access to it. The proxy implements the same interface as the real object. It can be used for Lazy Initialization (Virtual Proxy), Access Control (Protection Proxy), or logging requests before passing them to the real object. Spring heavily uses Dynamic Proxies to implement AOP (Aspect-Oriented Programming) like `@Transactional`.",
+      "example": "class ImageProxy implements Image {\n    private RealImage realImage;\n    public void display() {\n        if (realImage == null) realImage = new RealImage(\"huge_file.jpg\");\n        realImage.display();\n    }\n}"
+    },
+    {
+      "question": "What is the Template Method Pattern?",
+      "answer": "The Template Method is a behavioral pattern that defines the skeleton of an algorithm in a superclass but lets subclasses override specific steps of the algorithm without changing its overall structure. The superclass provides a `final` method that calls a series of abstract or virtual methods. The subclasses fill in the blanks.",
+      "example": "abstract class DataMiner {\n    // Template Method (final so it can't be changed)\n    public final void mineData() {\n        openFile();\n        extractData(); // Abstract: Subclass implements this\n        closeFile();\n    }\n    abstract void extractData();\n}"
+    },
+    {
+      "question": "Explain the Abstract Factory Pattern.",
+      "answer": "The Abstract Factory is a creational pattern that lets you produce families of related or dependent objects without specifying their concrete classes. While a standard Factory Method creates one type of object, an Abstract Factory groups multiple Factory Methods. For example, a `GUIFactory` might have `createButton()` and `createCheckbox()`, with concrete factories for `WindowsFactory` and `MacFactory`.",
+      "example": "interface GUIFactory {\n    Button createButton();\n    Checkbox createCheckbox();\n}\n// WindowsFactory returns WindowsButton and WindowsCheckbox"
+    },
+    {
+      "question": "What is the Chain of Responsibility Pattern?",
+      "answer": "This behavioral pattern lets you pass requests along a chain of handlers. Upon receiving a request, each handler decides either to process the request or to pass it to the next handler in the chain. It is widely used in logging frameworks and web security filters (e.g., Spring Security Filter Chain or Java Servlet Filters).",
+      "example": "abstract class Handler {\n    protected Handler next;\n    public void setNext(Handler n) { this.next = n; }\n    public abstract void handleRequest(String request);\n}"
+    },
+    {
+      "question": "What is the Mediator Pattern?",
+      "answer": "The Mediator is a behavioral pattern that reduces chaotic dependencies between objects. Instead of objects communicating directly with each other (tight coupling), they communicate strictly through a Mediator object. This promotes loose coupling. A classic example is an Air Traffic Controller (Mediator) managing planes (Components). The planes don't talk to each other; they talk to the tower.",
+      "example": "class ChatRoom (Mediator) {\n    public static void showMessage(User user, String msg) {\n        System.out.println(user.getName() + \": \" + msg);\n    }\n}"
+    },
+    {
+      "question": "Explain the Memento Pattern.",
+      "answer": "The Memento is a behavioral pattern that allows you to capture and save the internal state of an object so that it can be restored to that state later (Undo mechanism), without violating encapsulation. It involves three actors: the Originator (the object with state), the Memento (the saved state snapshot), and the Caretaker (the object that holds the mementos and requests rollbacks).",
+      "example": "class Editor (Originator) { ... }\nclass Snapshot (Memento) { private final String text; ... }\nclass History (Caretaker) { Stack<Snapshot> states; }"
+    },
+    {
+      "question": "What is the Flyweight Pattern?",
+      "answer": "The Flyweight is a structural pattern designed to minimize memory usage by sharing as much data as possible with similar objects, rather than keeping all data in each object. It splits object state into Intrinsic (shared, immutable) and Extrinsic (context-specific, mutable). Java's String Pool and `Integer.valueOf()` caching are classic examples of the Flyweight pattern.",
+      "example": "// Instead of creating 10,000 distinct Tree objects, \n// create 1 TreeModel (Flyweight) containing the texture and mesh, \n// and 10,000 instances containing only X/Y coordinates."
+    },
+    {
+      "question": "How does the State Pattern differ from Strategy?",
+      "answer": "Both patterns use composition to dynamically change behavior, but their intents are different. In the **Strategy** pattern, the client explicitly chooses which strategy the context should use, and the strategies usually don't know about each other. In the **State** pattern, the context transitions between states, and the states themselves often hold references to the context and trigger the transitions to other states (like a finite state machine).",
+      "example": "// Strategy: Sort array using QuickSort or MergeSort (Client decides)\n// State: Document state changes from Draft -> Review -> Published (State triggers transitions)"
+    }
+  ],
+  "tags": [
+    "design-patterns",
+    "singleton",
+    "factory",
+    "strategy",
+    "observer",
+    "builder"
+  ]
+}

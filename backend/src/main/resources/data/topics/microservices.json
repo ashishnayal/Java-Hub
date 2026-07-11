@@ -1,0 +1,94 @@
+{
+  "title": "Microservices & Spring Cloud",
+  "slug": "microservices",
+  "category": "Architecture",
+  "difficulty": "Expert",
+  "description": "Understand the transition from Monoliths to Microservices, service discovery, API Gateways, and distributed tracing.",
+  "content": "## Microservices Architecture\n\nA Microservices architecture structures an application as a collection of loosely coupled, independently deployable services. Each service represents a specific business domain (e.g., Inventory Service, Billing Service) and maintains its own database.\n\n### Monolith vs Microservices\n- **Monolith**: A single unified codebase and deployable artifact. Simple to develop and test initially, but becomes a nightmare to scale, maintain, and deploy as the team and codebase grow.\n- **Microservices**: Highly scalable, allows teams to use different technologies for different services, and ensures that if one service crashes, the entire system doesn't go down. However, it introduces immense operational complexity (network latency, distributed transactions, tracing).\n\n### Core Components of a Microservices Ecosystem\n- **Service Discovery**: A registry (like Eureka or Consul) where services dynamically register themselves so they can find each other without hardcoded IP addresses.\n- **API Gateway**: A single entry point for all external clients (like Spring Cloud Gateway). It handles routing, SSL termination, rate limiting, and global authentication.\n- **Config Server**: Centralized management of application properties for all services across all environments.\n- **Distributed Tracing**: Tools (like Zipkin or Jaeger) that attach a unique Trace ID to a request as it travels across multiple services, allowing developers to debug bottlenecks.",
+  "codeExamples": [
+    {
+      "title": "Service Discovery and Inter-Service Communication",
+      "language": "java",
+      "code": "// 1. Enable Eureka Client on both services\n@SpringBootApplication\n@EnableDiscoveryClient \npublic class OrderServiceApplication { ... }\n\n// 2. Inter-service communication using Feign Client\n// Instead of hardcoding \"http://192.168.1.50:8081/inventory\", \n// we just use the logical service name registered in Eureka.\nimport org.springframework.cloud.openfeign.FeignClient;\nimport org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PathVariable;\n\n@FeignClient(name = \"inventory-service\")\npublic interface InventoryClient {\n    \n    @GetMapping(\"/api/inventory/{productId}\")\n    boolean isProductInStock(@PathVariable Long productId);\n}\n\n// 3. Usage in Order Service\n@Service\npublic class OrderService {\n    private final InventoryClient inventoryClient;\n    // constructor injection...\n\n    public void placeOrder(Long productId) {\n        // Makes a network call to the inventory service\n        if (inventoryClient.isProductInStock(productId)) {\n            System.out.println(\"Order placed!\");\n        } else {\n            throw new RuntimeException(\"Out of stock\");\n        }\n    }\n}",
+      "explanation": "This demonstrates how Spring Cloud simplifies microservices. The Order Service needs to talk to the Inventory Service. Instead of managing IP addresses and writing raw HTTP client code, we use Eureka for service discovery and Spring Cloud OpenFeign to generate a declarative REST client automatically."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the CAP Theorem?",
+      "answer": "The CAP theorem states that in a distributed data store, it is impossible to simultaneously guarantee all three of the following: **Consistency** (every read receives the most recent write), **Availability** (every request receives a non-error response, regardless of node failures), and **Partition Tolerance** (the system continues to operate despite network failures dropping messages between nodes). When a network partition occurs (P), you must choose between C and A. You cannot have both.",
+      "example": "// Relational Databases (MySQL) prioritize Consistency (CP).\n// NoSQL Databases (Cassandra) often prioritize Availability (AP)."
+    },
+    {
+      "question": "What is Service Discovery and why is it necessary?",
+      "answer": "In a cloud environment, microservices are constantly scaling up and down, and containers are destroyed and recreated with new, unpredictable IP addresses. Hardcoding IP addresses is impossible. Service Discovery solves this. A central registry (like Netflix Eureka or Consul) acts as a phonebook. When a service starts, it registers its IP and port with Eureka. When Service A needs to call Service B, it asks Eureka for Service B's current location.",
+      "example": "// Service A asks Eureka: \"Where is inventory-service?\"\n// Eureka replies: \"It is currently running at 10.0.1.45:8080\""
+    },
+    {
+      "question": "What is an API Gateway?",
+      "answer": "An API Gateway is a server that acts as the single entry point for all external client traffic into the microservices ecosystem. Instead of a mobile app making 10 requests to 10 different internal microservices (dealing with CORS, authentication, and varied protocols), the app makes 1 request to the Gateway. The Gateway handles Authentication, Rate Limiting, Load Balancing, and Routing, forwarding the request to the correct internal service.",
+      "example": "// Client -> API Gateway (Spring Cloud Gateway) -> Internal Services (Order, Billing)"
+    },
+    {
+      "question": "How do microservices communicate with each other?",
+      "answer": "There are two primary paradigms: Synchronous and Asynchronous.\n1. **Synchronous**: The caller sends a request and blocks waiting for a response. Usually implemented via HTTP REST or gRPC (using `RestTemplate`, `WebClient`, or `FeignClient`).\n2. **Asynchronous (Event-Driven)**: The caller publishes a message to a message broker (like RabbitMQ or Apache Kafka) and immediately continues its work without waiting. Other services listen to the broker and react to the event.",
+      "example": "// Sync: Order Service waits for Billing Service to return \"Payment OK\".\n// Async: Order Service publishes \"OrderCreatedEvent\" to Kafka. Billing Service consumes it later."
+    },
+    {
+      "question": "What is the Circuit Breaker pattern?",
+      "answer": "In microservices, if Service A calls Service B synchronously, and Service B is down or responding extremely slowly, Service A's threads will block waiting for a timeout. If traffic is high, Service A will quickly exhaust all its threads and crash, leading to a cascading failure across the entire system. A Circuit Breaker (like Resilience4j) wraps the call. If it detects a high failure rate, it \"trips\" the circuit (opens it). Subsequent calls fail immediately without attempting the network call, protecting Service A's threads and giving Service B time to recover.",
+      "example": "// Circuit CLOSED: Network calls proceed normally.\n// Circuit OPEN: Network calls blocked immediately. Fallback method executed.\n// Circuit HALF-OPEN: Allows a few test calls through to see if Service B recovered."
+    },
+    {
+      "question": "What is Distributed Tracing?",
+      "answer": "When a user clicks a button, that single action might trigger a chain of requests across 5 different microservices. If an error occurs, checking 5 separate log files to reconstruct the flow is impossible. Distributed Tracing tools (like Zipkin or Jaeger, instrumented via Spring Cloud Sleuth/Micrometer) solve this by generating a unique `Trace ID` at the API Gateway. This ID is passed in the HTTP headers to every downstream service. All logs include this Trace ID, allowing developers to search one ID and see the entire request lifecycle across all servers.",
+      "example": "2026-07-11 14:30 [OrderService] [TraceID: a8b9c1, SpanID: 3f5d2] - Creating order..."
+    },
+    {
+      "question": "How do you manage configuration in a Microservices architecture?",
+      "answer": "Managing dozens of `application.yml` files scattered across different servers and environments (dev/test/prod) is error-prone. The solution is Centralized Configuration (e.g., Spring Cloud Config Server). Configuration files are stored in a central Git repository. When a microservice boots up, it contacts the Config Server to fetch its specific configuration. This allows you to change properties globally and trigger live reloads without redeploying services.",
+      "example": "// Config Server reads from: github.com/my-org/config-repo\n// Order Service requests: /order-service/prod"
+    },
+    {
+      "question": "What is a Distributed Transaction?",
+      "answer": "A distributed transaction is a transaction that spans multiple databases or microservices. Traditional databases use ACID properties to ensure that if a transaction fails, everything rolls back. In microservices (where each service has its own DB), this is not possible via standard SQL. If Order Service saves the order, but Billing Service crashes, you have inconsistent data.",
+      "example": "// Order DB: Order created.\n// Billing DB: Payment failed.\n// Result: Inconsistent system state."
+    },
+    {
+      "question": "How do you handle Distributed Transactions? (Saga Pattern)",
+      "answer": "Two-Phase Commit (2PC) is the traditional way, but it is too slow and heavily locks databases, making it unsuitable for microservices. The modern solution is the **Saga Pattern**. A Saga is a sequence of local transactions. Each service updates its own database and publishes an event to trigger the next service. If a service fails, it publishes a failure event, and all previous services execute a \"Compensating Transaction\" to undo their work.",
+      "example": "// Step 1: Order Service creates Order (Status: PENDING).\n// Step 2: Billing Service processes payment. Fails!\n// Step 3 (Compensating): Order Service executes logic to change Order Status to CANCELLED."
+    },
+    {
+      "question": "What is the Database-per-Service pattern?",
+      "answer": "A fundamental rule of microservices is that each service must own its own data and its own database. Service A is strictly forbidden from executing SQL queries against Service B's database. If Service A needs Service B's data, it must ask Service B via its API. This ensures loose coupling. If Service B decides to change its database schema, Service A is unaffected.",
+      "example": "// BAD: Order Service executes `SELECT * FROM billing_db.invoices`\n// GOOD: Order Service executes `GET /api/billing/invoices`"
+    },
+    {
+      "question": "What is Event Sourcing?",
+      "answer": "Instead of storing just the current state of data in a table, Event Sourcing stores every single change (event) that ever occurred to that data as an immutable sequence in an append-only log. The current state is derived by replaying the events. This provides a perfect audit trail and integrates brilliantly with Event-Driven microservices.",
+      "example": "// Traditional: Table Row -> Account: 123, Balance: $50\n// Event Sourced: Event 1 -> AccountCreated($0). Event 2 -> Deposited($100). Event 3 -> Withdrew($50). (Current balance is calculated dynamically to be $50)."
+    },
+    {
+      "question": "What is CQRS?",
+      "answer": "CQRS (Command Query Responsibility Segregation) is an architectural pattern that separates the data mutation operations (Commands: Create, Update, Delete) from the data retrieval operations (Queries: Read). Often, these two sides use completely different databases. The Command side might use a highly transactional relational database, while the Query side uses a denormalized NoSQL database (like Elasticsearch) optimized for blazing-fast reads. The two databases are kept in sync via message brokers.",
+      "example": "// Commands hit PostgreSQL (writes are safe and ACID compliant).\n// PostgreSQL emits events to Kafka.\n// Kafka updates Elasticsearch.\n// UI Queries hit Elasticsearch (reads are instantly fast)."
+    },
+    {
+      "question": "What is the Strangler Fig Pattern?",
+      "answer": "The Strangler pattern is the recommended approach for migrating a legacy Monolith to Microservices. Instead of trying to rewrite the entire application at once (a \"Big Bang\" rewrite, which usually fails), you place an API Gateway in front of the Monolith. You extract one small feature (e.g., Billing) into a new microservice. You configure the Gateway to route Billing traffic to the new service, and all other traffic to the Monolith. Over time, you extract more features until the Monolith is \"strangled\" and can be shut down.",
+      "example": "// Gateway routes /api/billing -> New Billing Service\n// Gateway routes /api/** -> Legacy Monolith"
+    },
+    {
+      "question": "What are the disadvantages of Microservices?",
+      "answer": "1. **Operational Complexity**: Deploying 20 services requires robust DevOps (Docker, Kubernetes, CI/CD pipelines). 2. **Network Latency**: In-memory method calls are replaced by HTTP/network calls, which are inherently slower and prone to failure. 3. **Data Consistency**: Maintaining consistency across distributed databases requires complex patterns like Sagas. 4. **Testing**: Integration testing an ecosystem of 20 interacting services is massively more difficult than testing a monolith.",
+      "example": "// A simple feature might require updating code in 3 different repositories and coordinating deployments."
+    },
+    {
+      "question": "What is a Sidecar Pattern (Service Mesh)?",
+      "answer": "In modern cloud-native architectures (like Istio or Linkerd on Kubernetes), handling cross-cutting network concerns (retries, circuit breaking, mTLS encryption, tracing) inside the application code (e.g., using Spring Cloud Netflix libraries) adds too much overhead. The Sidecar pattern extracts this logic. A lightweight proxy container (the \"Sidecar\") is deployed alongside every microservice container. The microservice only talks to its local sidecar, and the sidecars handle all the complex network routing and security.",
+      "example": "// Microservice A -> Sidecar A -> (Encrypted Network) -> Sidecar B -> Microservice B"
+    }
+  ],
+  "tags": ["microservices", "spring-cloud", "eureka", "gateway", "distributed-systems", "circuit-breaker"]
+}

@@ -9,6 +9,8 @@ interface CodeBlockProps {
 
 export default function CodeBlock({ example }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionResult, setExecutionResult] = useState<{output: string, error: string, exitCode: number} | null>(null);
 
   async function handleCopy() {
     try {
@@ -25,6 +27,24 @@ export default function CodeBlock({ example }: CodeBlockProps) {
       document.body.removeChild(textarea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  async function handleRun() {
+    setIsExecuting(true);
+    setExecutionResult(null);
+    try {
+      const res = await fetch("http://localhost:8080/api/compile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: example.code }),
+      });
+      const data = await res.json();
+      setExecutionResult(data);
+    } catch (err) {
+      setExecutionResult({ output: "", error: "Failed to connect to compiler API", exitCode: -1 });
+    } finally {
+      setIsExecuting(false);
     }
   }
 
@@ -106,12 +126,24 @@ export default function CodeBlock({ example }: CodeBlockProps) {
           <span className="code-block-title">{example.title}</span>
           <span className="code-block-lang">{example.language}</span>
         </div>
-        <button
-          className={`code-block-copy ${copied ? "copied" : ""}`}
-          onClick={handleCopy}
-        >
-          {copied ? "✓ Copied" : "📋 Copy"}
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {example.language.toLowerCase() === 'java' && (
+            <button
+              className="code-block-run"
+              style={{ background: "var(--accent-primary)", color: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "0.85rem", cursor: "pointer", border: "none" }}
+              onClick={handleRun}
+              disabled={isExecuting}
+            >
+              {isExecuting ? "⏳ Running..." : "▶ Run"}
+            </button>
+          )}
+          <button
+            className={`code-block-copy ${copied ? "copied" : ""}`}
+            onClick={handleCopy}
+          >
+            {copied ? "✓ Copied" : "📋 Copy"}
+          </button>
+        </div>
       </div>
       <div className="code-block-body">
         <pre>
@@ -125,6 +157,13 @@ export default function CodeBlock({ example }: CodeBlockProps) {
       {example.explanation && (
         <div className="code-block-explanation">
           💡 {example.explanation}
+        </div>
+      )}
+      {executionResult && (
+        <div className="code-block-execution" style={{ padding: "12px", borderTop: "1px solid var(--border-color)", backgroundColor: "#000", fontFamily: "monospace", color: "#0f0" }}>
+          <div style={{ color: "#fff", marginBottom: "8px", fontSize: "0.85rem" }}>Execution Result (Exit Code: {executionResult.exitCode}):</div>
+          {executionResult.output && <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{executionResult.output}</pre>}
+          {executionResult.error && <pre style={{ margin: 0, color: "#f55", whiteSpace: "pre-wrap" }}>{executionResult.error}</pre>}
         </div>
       )}
     </div>

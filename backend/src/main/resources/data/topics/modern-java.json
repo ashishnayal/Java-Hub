@@ -1,0 +1,119 @@
+{
+  "title": "Modern Java (Records, Sealed Classes & Pattern Matching)",
+  "slug": "modern-java",
+  "category": "Java 14+",
+  "difficulty": "Intermediate",
+  "description": "Explore the latest language features that make Java more concise and expressive, moving away from legacy boilerplate.",
+  "content": "## Modern Java Features\n\nJava's release cycle changed to every 6 months starting with Java 9. This accelerated the introduction of highly requested language features aimed at reducing boilerplate and improving data modeling.\n\n### Key Modern Features\n- **Records (Java 14/16)**: A concise syntax for creating immutable data-carrier classes. The compiler automatically generates the constructor, getters, `equals()`, `hashCode()`, and `toString()`.\n- **Sealed Classes (Java 15/17)**: Restricts which other classes or interfaces may extend or implement them. This allows the author of a superclass to strictly control the hierarchy.\n- **Pattern Matching for `instanceof` (Java 14/16)**: Removes the need for explicit casting after an `instanceof` check.\n- **Pattern Matching for `switch` (Java 17/21)**: Allows `switch` statements to test the exact type of an object and extract its components, turning `switch` into a powerful data extraction tool.\n- **Text Blocks (Java 13/15)**: Multi-line string literals that avoid the need for ugly escape sequences and concatenations.\n- **var Keyword (Java 10)**: Local Variable Type Inference. The compiler infers the type of a local variable from its initializer.",
+  "codeExamples": [
+    {
+      "title": "Records, Sealed Classes, and Switch Pattern Matching",
+      "language": "java",
+      "code": "// 1. Sealed Interface limits implementations strictly to these three records\npublic sealed interface Shape permits Circle, Rectangle, Square {}\n\n// 2. Records: Immutable data carriers (no boilerplate needed)\npublic record Circle(double radius) implements Shape {}\npublic record Rectangle(double length, double width) implements Shape {}\npublic record Square(double side) implements Shape {}\n\npublic class ModernJavaDemo {\n    \n    // 3. Pattern Matching for Switch\n    public static double calculateArea(Shape shape) {\n        // No default case needed! The compiler knows the hierarchy is sealed\n        // and all possible subtypes are covered.\n        return switch (shape) {\n            case Circle c -> Math.PI * c.radius() * c.radius();\n            case Rectangle r -> r.length() * r.width();\n            case Square s -> s.side() * s.side();\n        };\n    }\n\n    public static void main(String[] args) {\n        // 4. var keyword for local variable inference\n        var myShape = new Circle(5.0);\n        System.out.println(\"Area: \" + calculateArea(myShape));\n        \n        // 5. Text Blocks for clean multi-line strings\n        String json = \"\"\"\n            {\n                \"type\": \"Circle\",\n                \"radius\": 5.0\n            }\n            \"\"\";\n        System.out.println(json);\n    }\n}",
+      "explanation": "This example highlights the power of modern Java. The boilerplate of creating POJOs is eliminated by Records. The class hierarchy is locked down by Sealed interfaces. And finally, Switch Pattern Matching works perfectly with Sealed interfaces to provide exhaustiveness checking without default cases."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is a Record in Java?",
+      "answer": "Introduced in Java 14 (preview) and finalized in Java 16, a `record` is a special kind of class designed to act as a transparent carrier for immutable data. When you declare a record, the compiler automatically generates a canonical constructor, read-only accessor methods (e.g., `name()` instead of `getName()`), and the `equals()`, `hashCode()`, and `toString()` methods based on the record's components. This eliminates massive amounts of boilerplate code.",
+      "example": "public record Point(int x, int y) { }\n\n// Usage:\nPoint p = new Point(10, 20);\nSystem.out.println(p.x()); // 10\nSystem.out.println(p); // Prints \"Point[x=10, y=20]\""
+    },
+    {
+      "question": "Can a Record extend another class or be extended?",
+      "answer": "No. All records implicitly extend `java.lang.Record`. Because Java does not support multiple inheritance of classes, a record cannot extend any other class. Furthermore, all records are implicitly `final`, meaning they cannot be subclassed. However, records CAN implement interfaces.",
+      "example": "// INVALID\n// record Point(int x) extends SomeClass {}\n// class 3DPoint extends Point {}\n\n// VALID\nrecord Point(int x, int y) implements Serializable {}"
+    },
+    {
+      "question": "How do you validate data in a Record constructor?",
+      "answer": "Records provide a \"Compact Constructor\" specifically for validation and normalization. You do not need to declare the parameters again or assign them to fields (e.g., `this.x = x`); the compiler does that automatically at the end of the compact constructor block. You simply write the validation logic.",
+      "example": "public record User(String username, int age) {\n    // Compact Constructor\n    public User {\n        if (age < 0) {\n            throw new IllegalArgumentException(\"Age cannot be negative\");\n        }\n        // this.username = username is done implicitly!\n    }\n}"
+    },
+    {
+      "question": "What is the `var` keyword and where can it be used?",
+      "answer": "Introduced in Java 10, `var` enables Local Variable Type Inference. It allows you to declare local variables without explicitly stating the type, provided the compiler can infer the type from the initializer on the right-hand side. It can ONLY be used for local variables inside methods. It cannot be used for class fields, method parameters, or method return types. Java remains strongly and statically typed; `var` does not make Java dynamically typed like JavaScript.",
+      "example": "// Instead of: Map<String, List<User>> map = new HashMap<>();\nvar map = new HashMap<String, List<User>>();\n\n// var list; // INVALID: Cannot infer type without initializer"
+    },
+    {
+      "question": "What is a Sealed Class?",
+      "answer": "Introduced in Java 15 (finalized in Java 17), sealed classes allow the creator of a class or interface to strictly control which other classes may implement or extend it. You use the `sealed` modifier and the `permits` clause. This allows developers to build closed hierarchies, which is exceptionally powerful when combined with Pattern Matching in `switch` statements because the compiler knows all possible subclasses (exhaustiveness).",
+      "example": "public sealed class Vehicle permits Car, Truck {}\n\n// Car MUST declare whether it is final, sealed, or non-sealed\npublic final class Car extends Vehicle {}"
+    },
+    {
+      "question": "If a class extends a Sealed Class, what modifiers must it have?",
+      "answer": "Any class that extends a sealed class MUST declare exactly one of three modifiers to define how the hierarchy continues:\n1. `final`: The hierarchy ends here; it cannot be subclassed further.\n2. `sealed`: The class is also sealed and must define its own `permits` clause.\n3. `non-sealed`: The class explicitly breaks the seal, opening it up back to the traditional Java model where any unknown class can extend it.",
+      "example": "sealed class Shape permits Circle, Polygon {}\nfinal class Circle extends Shape {}\nnon-sealed class Polygon extends Shape {} // Anyone can now extend Polygon"
+    },
+    {
+      "question": "What is Pattern Matching for instanceof?",
+      "answer": "Introduced in Java 14 (finalized in 16), it removes the boilerplate of explicitly casting an object immediately after checking its type with `instanceof`. You can declare a pattern variable directly in the `instanceof` check. If the check is true, the object is automatically cast and assigned to that new binding variable, ready for use in the scoped block.",
+      "example": "// Old Way\nif (obj instanceof String) {\n    String s = (String) obj;\n    System.out.println(s.length());\n}\n\n// Modern Way\nif (obj instanceof String s) {\n    System.out.println(s.length());\n}"
+    },
+    {
+      "question": "How does Pattern Matching for switch work?",
+      "answer": "Introduced in Java 17 (preview) and finalized in Java 21, it completely revamps the `switch` statement/expression. Instead of just switching on Strings or Enums, you can switch on the *Type* of an object. Like `instanceof`, it automatically casts the object to a pattern variable. It also supports \"guard conditions\" using the `when` keyword to add logic directly to the case label.",
+      "example": "static String formatter(Object obj) {\n    return switch (obj) {\n        case Integer i -> String.format(\"int %d\", i);\n        case String s when s.length() > 5 -> \"Long string: \" + s;\n        case String s -> \"Short string: \" + s;\n        default -> obj.toString();\n    };\n}"
+    },
+    {
+      "question": "What is Exhaustiveness Checking in switch expressions?",
+      "answer": "When you use a `switch` expression (one that returns a value), the compiler requires that every possible input is handled. For Enums or Sealed Classes, if you provide a `case` for every single possible enum constant or permitted subclass, the compiler considers the switch \"exhaustive\". You do NOT need a `default` branch. If you add a new subclass to the sealed hierarchy later, the compiler will fail the build, alerting you to update your switch statement. This is a massive safety improvement.",
+      "example": "sealed interface Coin permits Heads, Tails {}\n// No default needed! If we add 'Edge' to Coin later, this won't compile.\nString result = switch(myCoin) {\n    case Heads h -> \"Won\";\n    case Tails t -> \"Lost\";\n};"
+    },
+    {
+      "question": "What are Text Blocks and how do they handle indentation?",
+      "answer": "Text Blocks (introduced in Java 15) allow you to write multi-line string literals without relying on cumbersome `\\n` escape sequences and `+` concatenation. They are enclosed in triple quotes `\"\"\"`. The compiler automatically strips incidental leading whitespace. It looks at the leftmost non-whitespace character on any line (or the closing `\"\"\"`) and uses that as the margin, stripping all spaces to the left of that margin.",
+      "example": "String html = \"\"\"\n              <html>\n                  <body>\n                      <p>Hello, world</p>\n                  </body>\n              </html>\n              \"\"\"; // Clean and highly readable"
+    },
+    {
+      "question": "Can you declare a field mutable inside a Record?",
+      "answer": "No. Records are designed to be immutable data carriers. All component fields are implicitly `private final`. Once a record is instantiated via its constructor, its state cannot change. If you need a mutable object with getters and setters, you must use a standard Class.",
+      "example": "record Item(int id, String name) {\n    // public void setName(String n) { this.name = n; } // COMPILE ERROR\n}"
+    },
+    {
+      "question": "What are Yield statements in Switch Expressions?",
+      "answer": "When a `switch` is used as an expression (returning a value) but a specific `case` block requires multiple lines of logic before returning the value, you cannot use the `return` keyword because it would return from the enclosing method. Instead, Java 13 introduced the `yield` keyword to return a value specifically out of the switch block.",
+      "example": "int numLetters = switch (day) {\n    case MONDAY, FRIDAY, SUNDAY -> 6;\n    case TUESDAY -> 7;\n    default -> {\n        int result = calculateLetters(day);\n        yield result; // Returns 'result' to 'numLetters'\n    }\n};"
+    },
+    {
+      "question": "Are Record components serialized differently than normal classes?",
+      "answer": "Yes. When a normal class is deserialized, the JVM uses reflection and hidden mechanisms to bypass the constructor and inject state directly into fields, which can bypass validation logic and cause security vulnerabilities. Records are intrinsically safer: deserialization of a Record *always* invokes its canonical constructor. This ensures that any validation logic you wrote in the compact constructor is executed, even against malicious serialized byte streams.",
+      "example": "// If a hacker alters a serialized stream to make 'age = -5',\n// the Record's compact constructor will catch it and throw an Exception\n// during deserialization, unlike standard classes."
+    },
+    {
+      "question": "Can you use `var` in a Lambda parameter list?",
+      "answer": "Yes, starting in Java 11, you can use `var` in lambda expressions. Why use `var` when lambdas already infer types implicitly? Because if you want to add an annotation (like `@NotNull`) to a lambda parameter, you are required to declare a type. `var` allows you to add the annotation without losing the convenience of type inference.",
+      "example": "// Implicit (cannot annotate)\n(x, y) -> x + y\n\n// Java 11 (Allows annotation with type inference)\n(@NotNull var x, @NotNull var y) -> x + y"
+    },
+    {
+      "question": "What is the new String method `formatted()`?",
+      "answer": "Introduced in Java 15, `formatted()` is an instance method on the String class that acts as a shorthand for `String.format()`. It is particularly useful when working with Text Blocks, as it allows you to chain the formatting directly at the end of the block.",
+      "example": "String json = \"\"\"\n    {\n        \"user\": \"%s\",\n        \"age\": %d\n    }\n    \"\"\".formatted(\"Alice\", 30);"
+    },
+    {
+      "question": "What are Record Patterns (Java 21)?",
+      "answer": "Record Patterns (finalized in Java 21) allow you to deconstruct a record directly inside an `instanceof` check or a `switch` case. Instead of matching the record type and then calling its accessors, the pattern matches the record and automatically extracts its components into local variables.",
+      "example": "record Point(int x, int y) {}\n\n// Old Pattern Matching:\nif (obj instanceof Point p) { System.out.println(p.x() + p.y()); }\n\n// Java 21 Record Pattern (Deconstruction):\nif (obj instanceof Point(int x, int y)) {\n    System.out.println(x + y); // x and y are extracted immediately\n}"
+    },
+    {
+      "question": "What is the difference between String `isBlank()` and `isEmpty()`?",
+      "answer": "Introduced in Java 11, `isBlank()` returns true if the string is completely empty OR if it contains only whitespace characters (spaces, tabs, newlines). The older `isEmpty()` method only returns true if the length of the string is exactly 0. `isBlank()` is heavily preferred for data validation.",
+      "example": "String s = \"   \\t\\n  \";\ns.isEmpty(); // false (length is > 0)\ns.isBlank(); // true (contains only whitespace)"
+    },
+    {
+      "question": "What is Unnamed Variables and Patterns (Java 22)?",
+      "answer": "Java 22 finalized the use of the underscore `_` to denote unnamed variables or patterns. When you are forced to declare a variable (e.g., in a catch block or a lambda) but you intentionally don't intend to use it, you can name it `_`. This signals your intent to the compiler and prevents \"unused variable\" warnings. It is especially useful in Record Deconstruction when you only care about one specific component.",
+      "example": "// Unnamed catch block variable\ntry { parseInt(str); } \ncatch (NumberFormatException _) { System.out.println(\"Invalid\"); }\n\n// Unnamed Record Pattern variable (We only care about y, not x)\nif (obj instanceof Point(_, int y)) { System.out.println(y); }"
+    },
+    {
+      "question": "What is virtual thread pinning?",
+      "answer": "Virtual Threads (Java 21) are mounted on carrier OS threads. Usually, if a virtual thread performs blocking I/O, it unmounts, freeing the carrier thread. However, if a virtual thread performs a blocking operation while inside a `synchronized` block or method, or while executing a native method, it becomes \"pinned\" to the carrier thread. It cannot unmount. If many virtual threads get pinned, the application will run out of carrier threads and stall. To avoid pinning, modern Java code uses `ReentrantLock` instead of `synchronized`.",
+      "example": "// Avoid this with Virtual Threads (Causes Pinning)\nsynchronized(lock) { Thread.sleep(1000); }\n\n// Use this instead (No Pinning)\nreentrantLock.lock();\ntry { Thread.sleep(1000); } finally { reentrantLock.unlock(); }"
+    },
+    {
+      "question": "How do you run a single-file Java program without compiling it?",
+      "answer": "Starting in Java 11, you no longer need to run `javac` to compile a single-file program before executing it. You can simply use the `java` command directly on the `.java` source file. The JVM compiles it entirely in memory and executes the `main` method immediately. This makes Java much friendlier for writing quick scripts.",
+      "example": "// In terminal, instead of:\n// javac Script.java\n// java Script\n\n// You just run:\njava Script.java"
+    }
+  ],
+  "tags": ["modern-java", "records", "sealed-classes", "pattern-matching", "switch", "var", "text-blocks"]
+}

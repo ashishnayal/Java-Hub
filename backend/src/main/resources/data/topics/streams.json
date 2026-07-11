@@ -1,0 +1,119 @@
+{
+  "title": "Stream API",
+  "slug": "streams",
+  "category": "Java 8+",
+  "difficulty": "Intermediate",
+  "description": "Master the Stream API for declarative data processing — filter, map, reduce, collect, and parallel streams.",
+  "content": "## Java Stream API\n\nStreams provide a declarative way to process collections of data. A Stream is not a data structure; it takes input from Collections, Arrays, or I/O channels. Streams don't change the original data structure, they only provide the result as per the pipelined methods.\n\n### Stream Pipeline\n1. **Source** - Collection, array, generator, I/O channel.\n2. **Intermediate Operations** - Return a new Stream. They are always lazy; executing an intermediate operation such as `filter()` does not actually perform any filtering, but instead creates a new stream that, when traversed, contains the elements of the initial stream that match the given predicate. Examples: `filter`, `map`, `flatMap`, `sorted`, `distinct`, `peek`, `limit`, `skip`.\n3. **Terminal Operations** - Produce a result or a side-effect. After the terminal operation is performed, the stream pipeline is considered consumed, and can no longer be used. Examples: `collect`, `forEach`, `reduce`, `count`, `findFirst`, `anyMatch`, `allMatch`.\n\n### Parallel Streams\nStreams can be processed in parallel to increase performance on multi-core architectures. Simply use `parallelStream()` instead of `stream()`. However, be cautious: parallel streams use the common ForkJoinPool and can cause performance degradation if tasks involve blocking I/O or if the dataset is small.",
+  "codeExamples": [
+    {
+      "title": "Stream Operations Deep Dive",
+      "language": "java",
+      "code": "import java.util.*;\nimport java.util.stream.*;\n\nrecord Employee(String name, String dept, double salary) {}\n\npublic class StreamMastery {\n    public static void main(String[] args) {\n        var employees = List.of(\n            new Employee(\"Alice\", \"Engineering\", 95000),\n            new Employee(\"Bob\", \"Marketing\", 75000),\n            new Employee(\"Charlie\", \"Engineering\", 105000)\n        );\n\n        // Group by department\n        Map<String, List<Employee>> byDept = employees.stream()\n            .collect(Collectors.groupingBy(Employee::dept));\n\n        // Top earner\n        String topEarner = employees.stream()\n            .sorted(Comparator.comparingDouble(Employee::salary).reversed())\n            .map(Employee::name)\n            .findFirst()\n            .orElse(\"None\");\n            \n        System.out.println(\"Top Earner: \" + topEarner);\n    }\n}",
+      "explanation": "Streams enable powerful data transformations with grouping, partitioning, and complex aggregations — all in a readable, declarative style without writing explicit loops."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between Intermediate and Terminal operations?",
+      "answer": "Intermediate operations (like `filter`, `map`, `sorted`) return a new Stream and are inherently **lazy**, meaning they do not execute until a terminal operation is called. Terminal operations (like `collect`, `forEach`, `reduce`) produce a non-Stream result (or a side effect) and initiate the processing of the entire pipeline. Once a terminal operation completes, the stream is considered consumed and cannot be reused.",
+      "example": "Stream<String> s = List.of(\"A\", \"B\").stream();\n// This does nothing yet! It just sets up the pipeline.\ns.filter(x -> x.equals(\"A\")); \n// Now the filtering happens.\nlong count = s.count(); "
+    },
+    {
+      "question": "What happens if you use a Stream after a terminal operation is called?",
+      "answer": "Java Streams are strictly single-use. If you attempt to invoke another operation (intermediate or terminal) on a stream reference after a terminal operation has already been executed on it, the JVM will throw an `IllegalStateException: stream has already been operated upon or closed`.",
+      "example": "Stream<String> stream = List.of(\"a\", \"b\").stream();\nstream.forEach(System.out::println); // Terminal operation\n// stream.count(); // THROWS IllegalStateException!"
+    },
+    {
+      "question": "Difference between map() and flatMap()?",
+      "answer": "`map()` is used for a one-to-one transformation; it applies a function to each element and wraps the result back into the stream (e.g., mapping `String` to `Integer`). `flatMap()` is used for one-to-many transformations and flattening. If your function returns a stream of elements (e.g., mapping a `List` to a `Stream<String>`), `flatMap()` will flatten those nested streams into a single, unified continuous stream.",
+      "example": "List<List<String>> nestedLists = List.of(List.of(\"A\"), List.of(\"B\"));\n// map() results in Stream<List<String>>\n// flatMap() results in Stream<String> containing \"A\", \"B\"\nList<String> flat = nestedLists.stream()\n    .flatMap(List::stream)\n    .collect(Collectors.toList());"
+    },
+    {
+      "question": "How does Stream laziness improve performance?",
+      "answer": "Because intermediate operations are lazy, the JVM can optimize the pipeline by fusing operations together (loop fusion) and using short-circuiting. For example, if you chain `filter()`, `map()`, and then `findFirst()`, the stream doesn't filter and map the entire collection. It processes elements one by one through the pipeline, and completely stops processing the moment `findFirst()` is satisfied, drastically saving CPU cycles.",
+      "example": "List<Integer> list = List.of(1, 2, 3, 4, 5);\nlist.stream()\n    .filter(n -> { System.out.print(\"F\"+n); return n % 2 == 0; })\n    .map(n -> { System.out.print(\"M\"+n); return n * 10; })\n    .findFirst();\n// Output: F1 F2 M2 (It never evaluates 3, 4, or 5!)"
+    },
+    {
+      "question": "What is the difference between findFirst() and findAny()?",
+      "answer": "`findFirst()` guarantees that the first element in the encounter order of the stream is returned. `findAny()` allows the stream to return *any* matching element it finds, regardless of order. In sequential streams, they usually return the same thing. But in parallel streams, `findAny()` is much faster because it returns as soon as any thread finds a match, whereas `findFirst()` forces threads to coordinate to ensure the absolute first element is returned.",
+      "example": "List<Integer> nums = List.of(1, 2, 3, 4, 5);\nOptional<Integer> first = nums.stream().filter(n -> n > 2).findFirst(); // Always 3\nOptional<Integer> any = nums.parallelStream().filter(n -> n > 2).findAny(); // Could be 3, 4, or 5"
+    },
+    {
+      "question": "When should you use parallelStream() vs stream()?",
+      "answer": "`parallelStream()` splits the data into multiple chunks and processes them concurrently using the common `ForkJoinPool`. You should use it only when: 1) You have a massive dataset (millions of elements). 2) The operations are CPU-intensive. 3) The operations are completely stateless and independent. Avoid parallel streams for small datasets (the overhead of splitting threads is slower than sequential processing) or if tasks involve blocking I/O (which can starve the shared pool).",
+      "example": "List<String> largeList = getMillionRecords();\n// Good candidate for parallel if processing is purely mathematical\nlargeList.parallelStream().map(String::toUpperCase).collect(Collectors.toList());"
+    },
+    {
+      "question": "What is reduce() and how is it used?",
+      "answer": "`reduce()` is a terminal operation used to combine all elements of a stream into a single result (like a sum, max, or concatenated string). It takes an identity value (the starting value) and a `BinaryOperator` (an accumulator function). It repeatedly applies the accumulator to combine the current result with the next element in the stream.",
+      "example": "List<Integer> numbers = List.of(1, 2, 3, 4);\n// Summing numbers: 0 + 1 + 2 + 3 + 4\nint sum = numbers.stream().reduce(0, (a, b) -> a + b);\n// Or using method reference:\nint sumRef = numbers.stream().reduce(0, Integer::sum);"
+    },
+    {
+      "question": "Explain Collectors.groupingBy().",
+      "answer": "`Collectors.groupingBy()` is a powerful collector that acts similarly to a SQL `GROUP BY` clause. It takes a classifier function and groups the stream elements into a `Map` where the keys are the results of the classifier function, and the values are `Lists` containing all elements that map to that key. You can also provide a downstream collector to further process the grouped lists (e.g., counting them or mapping them).",
+      "example": "List<String> words = List.of(\"apple\", \"banana\", \"pear\", \"apricot\");\n// Group by first letter\nMap<Character, List<String>> byFirstLetter = words.stream()\n    .collect(Collectors.groupingBy(w -> w.charAt(0)));\n// Output: {a=[apple, apricot], b=[banana], p=[pear]}"
+    },
+    {
+      "question": "How do you collect stream elements into an unmodifiable List?",
+      "answer": "Prior to Java 10, you used `Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList)`. In Java 10+, a new convenient collector was introduced: `Collectors.toUnmodifiableList()`. Alternatively, in Java 16+, you can directly call the `.toList()` method on the stream itself, which internally produces an unmodifiable list and is cleaner than using the `collect()` API.",
+      "example": "Stream<String> stream = Stream.of(\"A\", \"B\");\n\n// Java 10+\nList<String> list1 = stream.collect(Collectors.toUnmodifiableList());\n\n// Java 16+ (Preferred)\nList<String> list2 = Stream.of(\"A\", \"B\").toList();"
+    },
+    {
+      "question": "What is the difference between limit() and skip()?",
+      "answer": "Both are stateful intermediate operations used for slicing streams. `limit(n)` truncates the stream, allowing only the first `n` elements to pass through, discarding the rest. `skip(n)` drops the first `n` elements of the stream and allows the remaining elements to pass through. Combining them is a common way to implement pagination.",
+      "example": "List<Integer> nums = List.of(1, 2, 3, 4, 5, 6, 7);\n// Pagination: Page 2, Page Size 3\nList<Integer> page = nums.stream()\n    .skip(3)  // Skips 1, 2, 3\n    .limit(3) // Keeps 4, 5, 6\n    .toList();"
+    },
+    {
+      "question": "Are Java Streams thread-safe?",
+      "answer": "The Stream API itself manages thread-safety when using `parallelStream()` by partitioning the data. However, the operations (lambdas) you pass into the stream must be **stateless** and **non-interfering** to be thread-safe. If your lambda modifies external shared variables without synchronization, or uses a stateful collection like `ArrayList` inside a `forEach()`, it will cause race conditions and data corruption.",
+      "example": "// BAD: Race condition!\nList<Integer> target = new ArrayList<>();\nList.of(1,2,3).parallelStream().forEach(n -> target.add(n)); \n\n// GOOD: Thread-safe\nList<Integer> targetSafe = List.of(1,2,3).parallelStream()\n    .collect(Collectors.toList());"
+    },
+    {
+      "question": "What are primitive streams and why do we need them?",
+      "answer": "The standard `Stream<T>` operates only on Objects. If you use it with primitives, Java performs autoboxing/unboxing (e.g., `int` to `Integer`), which adds massive memory and performance overhead for large datasets. To prevent this, Java provides `IntStream`, `LongStream`, and `DoubleStream`. These operate directly on primitive types and provide specialized math functions like `sum()`, `average()`, and `summaryStatistics()`.",
+      "example": "int[] arr = {1, 2, 3, 4, 5};\n// No boxing overhead, extremely fast\nint sum = Arrays.stream(arr).sum(); \n\n// Creating range\nIntStream.rangeClosed(1, 100).forEach(System.out::println);"
+    },
+    {
+      "question": "Difference between forEach() and peek()?",
+      "answer": "`forEach()` is a terminal operation that consumes the stream and produces a side effect (returning `void`). `peek()` is an intermediate operation that produces a side effect but returns the stream unmodified so further operations can be chained. `peek()` is primarily designed for debugging (e.g., logging elements as they flow past a certain point in the pipeline).",
+      "example": "List<String> names = List.of(\"Alice\", \"Bob\");\nnames.stream()\n    .peek(n -> System.out.println(\"Before uppercase: \" + n))\n    .map(String::toUpperCase)\n    .forEach(n -> System.out.println(\"Final: \" + n));"
+    },
+    {
+      "question": "How does Collectors.partitioningBy() differ from groupingBy()?",
+      "answer": "`partitioningBy()` is a specialized case of `groupingBy()` that takes a `Predicate` (which returns boolean) instead of a `Function`. It always returns a `Map<Boolean, List<T>>` containing exactly two keys: `true` and `false`. Even if no elements match one of the conditions, the key will still exist with an empty list. It is highly optimized for boolean splitting.",
+      "example": "List<Integer> nums = List.of(1, 2, 3, 4, 5);\nMap<Boolean, List<Integer>> evensAndOdds = nums.stream()\n    .collect(Collectors.partitioningBy(n -> n % 2 == 0));\n// Result: {false=[1, 3, 5], true=[2, 4]}"
+    },
+    {
+      "question": "Can you use a Stream to read a file?",
+      "answer": "Yes, Java NIO.2 introduced `Files.lines(Path)`, which returns a `Stream<String>` where each element is a line from the file. This is incredibly memory efficient for processing massive files because the stream reads the file lazily (line by line) instead of loading the entire file into memory at once. You must ensure the stream is closed (usually via try-with-resources) to release the file handle.",
+      "example": "try (Stream<String> lines = Files.lines(Paths.get(\"data.txt\"))) {\n    long errorCount = lines\n        .filter(line -> line.contains(\"ERROR\"))\n        .count();\n}"
+    },
+    {
+      "question": "What is the difference between anyMatch(), allMatch(), and noneMatch()?",
+      "answer": "These are short-circuiting terminal operations that take a `Predicate` and return a `boolean`.\n- `anyMatch()` returns true if *at least one* element matches. It stops evaluating as soon as it finds a true.\n- `allMatch()` returns true if *every* element matches. It stops evaluating as soon as it finds a false.\n- `noneMatch()` returns true if *no* elements match. It is the logical inverse of anyMatch.",
+      "example": "List<Integer> nums = List.of(2, 4, 6);\nboolean any = nums.stream().anyMatch(n -> n == 4); // true\nboolean all = nums.stream().allMatch(n -> n % 2 == 0); // true\nboolean none = nums.stream().noneMatch(n -> n < 0); // true"
+    },
+    {
+      "question": "How do you concatenate two streams?",
+      "answer": "You can use the static method `Stream.concat(stream1, stream2)`. This creates a lazily concatenated stream whose elements are all the elements of the first stream followed by all the elements of the second stream. Be careful when concatenating infinite streams; if the first stream is infinite, the second stream will never be reached.",
+      "example": "Stream<String> s1 = Stream.of(\"A\", \"B\");\nStream<String> s2 = Stream.of(\"C\", \"D\");\nStream<String> merged = Stream.concat(s1, s2);\nmerged.forEach(System.out::print); // ABCD"
+    },
+    {
+      "question": "What is IntSummaryStatistics?",
+      "answer": "When working with primitive streams (`IntStream`, `LongStream`, `DoubleStream`), the `summaryStatistics()` terminal operation returns an object (like `IntSummaryStatistics`) that computes several common statistical data points simultaneously in a single pass over the data: count, sum, min, max, and average. This prevents you from having to traverse the stream multiple times.",
+      "example": "IntStream ints = IntStream.of(1, 2, 3, 4, 5);\nIntSummaryStatistics stats = ints.summaryStatistics();\nSystem.out.println(\"Max: \" + stats.getMax()); // 5\nSystem.out.println(\"Avg: \" + stats.getAverage()); // 3.0"
+    },
+    {
+      "question": "How do you generate an infinite stream?",
+      "answer": "Java provides `Stream.iterate()` and `Stream.generate()` for this purpose. \n- `generate(Supplier)` creates an infinite stream where each element is generated by the supplier.\n- `iterate(seed, UnaryOperator)` creates an infinite stream starting with the seed, and each subsequent element is generated by applying the operator to the previous element. You must use `limit()` to truncate infinite streams before a terminal operation.",
+      "example": "// Infinite stream of random numbers\nStream.generate(Math::random).limit(5).forEach(System.out::println);\n\n// Infinite sequence: 0, 2, 4, 6...\nStream.iterate(0, n -> n + 2).limit(5).forEach(System.out::println);"
+    },
+    {
+      "question": "Why is it anti-pattern to use an ArrayList internally inside a Stream's map()?",
+      "answer": "Modifying external state (like adding to an outside ArrayList) from within intermediate stream operations violates the core functional principle of Streams (non-interference). It makes the stream stateful. If you switch to `parallelStream()`, the `ArrayList` will suffer race conditions and corrupt data because it is not thread-safe. The correct approach is always to return results and use `collect(Collectors.toList())`.",
+      "example": "// ANTI-PATTERN: Side-effects in map/forEach\nList<String> badResult = new ArrayList<>();\nnames.stream().forEach(n -> badResult.add(n.toUpperCase()));\n\n// CORRECT: Pure functions\nList<String> goodResult = names.stream()\n    .map(String::toUpperCase)\n    .collect(Collectors.toList());"
+    }
+  ],
+  "tags": ["streams", "filter", "map", "reduce", "collect", "parallel-streams"]
+}

@@ -1,0 +1,119 @@
+{
+  "title": "Lambda Expressions & Functional Programming",
+  "slug": "lambdas",
+  "category": "Java 8+",
+  "difficulty": "Intermediate",
+  "description": "Understand lambda expressions, functional interfaces, method references, and how Java embraces functional programming.",
+  "content": "## Functional Programming in Java\n\nJava 8 introduced functional programming concepts with lambda expressions, functional interfaces, and the Stream API. This allows writing code in a declarative style rather than imperative.\n\n### Key Concepts\n- **Lambda Expression** - Anonymous function: `(params) -> expression` or `(params) -> { statements; }`.\n- **Functional Interface** - Interface with exactly one abstract method. Can have multiple default/static methods. Annotated with `@FunctionalInterface`.\n- **Method Reference** - Shorthand for lambdas calling a single method: `ClassName::methodName`.\n- **Effectively Final Variables** - Lambdas can only access local variables from the enclosing scope if they are final or effectively final (never modified after initialization).\n\n### Built-in Functional Interfaces (`java.util.function`)\n- **Predicate<T>** - takes T, returns `boolean`. Methods: `test()`, `and()`, `or()`, `negate()`.\n- **Function<T, R>** - takes T, returns R. Methods: `apply()`, `andThen()`, `compose()`.\n- **Consumer<T>** - takes T, returns `void`. Methods: `accept()`, `andThen()`.\n- **Supplier<T>** - takes nothing, returns T. Methods: `get()`.",
+  "codeExamples": [
+    {
+      "title": "Lambdas & Functional Interfaces",
+      "language": "java",
+      "code": "import java.util.function.*;\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Predicate - takes T, returns boolean\n        Predicate<String> isLong = s -> s.length() > 5;\n        System.out.println(isLong.test(\"Hello World\")); // true\n\n        // Function - takes T, returns R\n        Function<String, Integer> length = String::length;\n        System.out.println(length.apply(\"Java\")); // 4\n\n        // Consumer - takes T, returns void\n        Consumer<String> printer = System.out::println;\n        printer.accept(\"Hello!\");\n\n        // Supplier - takes nothing, returns T\n        Supplier<List<String>> listFactory = ArrayList::new;\n        List<String> newList = listFactory.get();\n    }\n}",
+      "explanation": "Java provides built-in functional interfaces in java.util.function — Predicate, Function, Consumer, Supplier — that cover most common use cases. You can implement them quickly using lambda expressions."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is a Functional Interface?",
+      "answer": "A Functional Interface is an interface that contains exactly one abstract method. It can contain any number of default or static methods, but only one abstract method. They act as the target types for lambda expressions and method references. The `@FunctionalInterface` annotation is optional but recommended; it causes the compiler to generate an error if you accidentally add a second abstract method.",
+      "example": "@FunctionalInterface\ninterface Calculator {\n    int calculate(int a, int b);\n    // Can have default methods too\n    default void print() { System.out.println(\"Calc\"); }\n}"
+    },
+    {
+      "question": "What is a Lambda Expression?",
+      "answer": "A Lambda Expression is an anonymous function (a function without a name) that can be passed around as if it was an object and executed on demand. It provides a clear and concise way to represent one method interface using an expression. It eliminates the need for bulky Anonymous Inner Classes.",
+      "example": "// Old way (Anonymous Inner Class)\nRunnable r1 = new Runnable() {\n    public void run() { System.out.println(\"Running\"); }\n};\n\n// New way (Lambda Expression)\nRunnable r2 = () -> System.out.println(\"Running\");"
+    },
+    {
+      "question": "Can a lambda expression access variables from the enclosing scope?",
+      "answer": "Yes, lambda expressions can access local variables from the enclosing scope, but with a strict condition: those variables must be `final` or `effectively final`. 'Effectively final' means the variable is initialized once and its value is never changed anywhere in the method. If you try to modify the variable inside or outside the lambda, the compiler will throw an error.",
+      "example": "int multiplier = 2; // Effectively final\nFunction<Integer, Integer> doubler = n -> n * multiplier;\n\n// multiplier = 3; // UNCOMMENTING THIS CAUSES A COMPILE ERROR"
+    },
+    {
+      "question": "Why must variables accessed by lambdas be effectively final?",
+      "answer": "This is a restriction to prevent concurrency issues and memory leaks. Local variables reside on the thread stack and are destroyed when the method returns. A lambda, however, might be passed to another thread and executed long after the original method has returned. To prevent the lambda from accessing a destroyed variable, Java copies the value of the variable into the lambda's memory structure. If the variable were allowed to change, the copy and the original would be out of sync, leading to unpredictable behavior.",
+      "example": "public Supplier<Integer> getSupplier() {\n    int x = 10; \n    return () -> x; // x is copied into the lambda\n} // x is destroyed here, but the lambda still has its copy."
+    },
+    {
+      "question": "What is the difference between Predicate and Function?",
+      "answer": "`Predicate<T>` is a functional interface that accepts one argument and always returns a `boolean`. It is typically used for filtering or matching. `Function<T, R>` accepts an argument of type T and transforms it, returning a result of type R. It is typically used for mapping.",
+      "example": "Predicate<Integer> isEven = n -> n % 2 == 0;\nFunction<Integer, String> intToString = n -> \"Number: \" + n;\n\nif (isEven.test(4)) {\n    System.out.println(intToString.apply(4));\n}"
+    },
+    {
+      "question": "Explain Method References in Java.",
+      "answer": "A Method Reference is a shorthand syntax for a lambda expression that simply calls an existing method. It improves readability. There are four types:\n1. Reference to a static method (`ClassName::staticMethod`)\n2. Reference to an instance method of a particular object (`instance::method`)\n3. Reference to an instance method of an arbitrary object of a particular type (`ClassName::method`)\n4. Constructor reference (`ClassName::new`)",
+      "example": "List<String> names = List.of(\"Alice\", \"Bob\");\n\n// Lambda\nnames.forEach(n -> System.out.println(n));\n\n// Method Reference\nnames.forEach(System.out::println);"
+    },
+    {
+      "question": "What is the Supplier interface used for?",
+      "answer": "`Supplier<T>` is a functional interface that takes no arguments but returns an object of type T. It is often used for lazy evaluation or as a factory to create new objects only when needed, avoiding unnecessary computation or memory allocation.",
+      "example": "public static String expensiveCompute() { return \"Heavy Data\"; }\n\n// The expensive computation won't run unless the supplier's get() is called.\nSupplier<String> dataSupplier = () -> expensiveCompute();\n\n// System.out.println(dataSupplier.get());"
+    },
+    {
+      "question": "What is the Consumer interface?",
+      "answer": "`Consumer<T>` is a functional interface that accepts a single input argument and returns no result (`void`). It is used for operations that produce side-effects, such as printing to the console, modifying an external state, or saving to a database. It is heavily used in the `forEach()` method of Streams and Iterables.",
+      "example": "Consumer<String> greeter = name -> System.out.println(\"Hello, \" + name);\ngreeter.accept(\"Java Developer\");\n\nList.of(\"A\", \"B\").forEach(greeter);"
+    },
+    {
+      "question": "Can a Functional Interface extend another Functional Interface?",
+      "answer": "Yes, but there's a catch. If interface A is a functional interface (has one abstract method), and interface B extends A, then B is also a functional interface ONLY IF it does not declare any new abstract methods. If B declares a new abstract method, it now has two abstract methods (one inherited, one declared), and it ceases to be a functional interface. It will fail to compile if annotated with `@FunctionalInterface`.",
+      "example": "@FunctionalInterface\ninterface A { void doSomething(); }\n\n@FunctionalInterface\ninterface B extends A { } // Valid\n\n// @FunctionalInterface\n// interface C extends A { void doMore(); } // INVALID!"
+    },
+    {
+      "question": "What is the difference between UnaryOperator and Function?",
+      "answer": "`UnaryOperator<T>` is a specialized sub-interface of `Function<T, T>`. While `Function<T, R>` can take an argument of one type and return a result of a completely different type, `UnaryOperator` enforces that the input and output types must be exactly the same. It is used when an operation simply alters or updates a value of the same type.",
+      "example": "Function<Integer, String> toString = num -> String.valueOf(num);\n\n// Input and Output must be the same type\nUnaryOperator<Integer> square = num -> num * num;\nSystem.out.println(square.apply(5)); // 25"
+    },
+    {
+      "question": "Explain BiFunction, BiConsumer, and BiPredicate.",
+      "answer": "Standard functional interfaces only take one argument. The \"Bi\" variants are designed to take exactly two arguments.\n- `BiFunction<T, U, R>` takes arguments T and U, and returns R.\n- `BiConsumer<T, U>` takes arguments T and U, and returns nothing.\n- `BiPredicate<T, U>` takes arguments T and U, and returns a boolean.",
+      "example": "BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;\nBiConsumer<String, String> concat = (s1, s2) -> System.out.println(s1 + s2);\nBiPredicate<String, Integer> lengthCheck = (str, len) -> str.length() == len;\n\nSystem.out.println(add.apply(5, 10)); // 15"
+    },
+    {
+      "question": "How does Java implement Lambda Expressions internally? Are they just Anonymous Classes?",
+      "answer": "No, they are not just syntactic sugar for Anonymous Inner Classes. Anonymous classes create a new `.class` file on disk for every instance, which bloats the application. Lambdas use a feature introduced in Java 7 called `invokedynamic`. When the compiler sees a lambda, it does not create a new class file. Instead, it generates a private static method containing the lambda body inside the host class, and uses `invokedynamic` at runtime to link that method dynamically.",
+      "example": "// A lambda () -> System.out.println(\"Hi\");\n// Compiler roughly translates to:\n// private static void lambda$0() {\n//     System.out.println(\"Hi\");\n// }"
+    },
+    {
+      "question": "What happens if a Lambda Expression throws a Checked Exception?",
+      "answer": "Standard functional interfaces in `java.util.function` (like `Consumer`, `Function`, `Predicate`) do NOT declare any checked exceptions. Therefore, if the code inside your lambda throws a checked exception (e.g., `IOException`), you must wrap it in a `try-catch` block inside the lambda and handle it, or wrap it in a `RuntimeException` and rethrow it. You cannot simply use the `throws` keyword on a lambda.",
+      "example": "Consumer<String> fileReader = path -> {\n    try {\n        Files.readString(Path.of(path));\n    } catch (IOException e) {\n        throw new RuntimeException(\"Failed to read file\", e);\n    }\n};"
+    },
+    {
+      "question": "What are Default Methods in interfaces and why were they introduced?",
+      "answer": "Default methods are methods in interfaces that have a body (an implementation), designated by the `default` keyword. They were introduced in Java 8 primarily for backward compatibility. They allowed Java architects to add new methods to existing interfaces (like adding `stream()` to the `Collection` interface) without breaking the millions of existing classes that implemented those interfaces.",
+      "example": "interface Vehicle {\n    void start();\n    // Added years later without breaking old implementations\n    default void honk() {\n        System.out.println(\"Beep beep!\");\n    }\n}"
+    },
+    {
+      "question": "What is the difference between a default method and an abstract class?",
+      "answer": "While both can provide concrete methods, abstract classes can have state (instance variables) and constructors. Interfaces cannot have state (only static final constants) and cannot have constructors. Additionally, a class can implement multiple interfaces (inheriting multiple default methods), but can only extend one abstract class. Abstract classes define core identity (IS-A), while interfaces define behavior.",
+      "example": "// Abstract class can hold state\nabstract class Animal { String name; }\n\n// Interface CANNOT hold state\ninterface Flyable { \n    // String wingspan; // ERROR: Must be static final\n    default void fly() {} \n}"
+    },
+    {
+      "question": "How are variable scopes handled inside a lambda?",
+      "answer": "A lambda expression does not create a new scoping level. The scope of a lambda is exactly the same as the enclosing method block. This means you cannot declare a variable inside a lambda with the same name as a variable already defined in the enclosing scope, because it would result in a naming conflict.",
+      "example": "int x = 10;\n// Consumer<Integer> myConsumer = x -> { // ERROR: 'x' is already defined!\n//     System.out.println(x);\n// };\n\nConsumer<Integer> myConsumer = y -> {\n    System.out.println(y + x); // Accesses enclosing x\n};"
+    },
+    {
+      "question": "What is `Optional` and how is it related to functional programming?",
+      "answer": "`Optional<T>` is a container object that may or may not contain a non-null value. It was introduced to eradicate the notorious `NullPointerException`. It embodies functional programming principles by providing a monadic structure with methods like `map()`, `flatMap()`, and `filter()`, allowing you to chain operations safely without writing ugly `if (obj != null)` checks everywhere.",
+      "example": "String email = Optional.ofNullable(getUser())\n    .map(User::getProfile)\n    .map(Profile::getEmail)\n    .orElse(\"unknown@example.com\");"
+    },
+    {
+      "question": "What is the diamond problem with default methods?",
+      "answer": "Because a class can implement multiple interfaces, it's possible to implement two interfaces that both provide a default method with the exact same signature. This creates a multiple inheritance conflict (the Diamond Problem). The compiler will throw an error. The resolving class MUST explicitly override the method to resolve the conflict, optionally calling one of the parent interface's implementations using `InterfaceName.super.methodName()`.",
+      "example": "interface A { default void log() { System.out.print(\"A\"); } }\ninterface B { default void log() { System.out.print(\"B\"); } }\n\nclass C implements A, B {\n    @Override\n    public void log() {\n        A.super.log(); // Explicit resolution\n    }\n}"
+    },
+    {
+      "question": "Can you use `this` inside a Lambda Expression? What does it refer to?",
+      "answer": "Yes, you can use `this` inside a lambda. Because a lambda does not create its own scope or an anonymous inner class instance, `this` inside a lambda refers strictly to the *enclosing class instance* where the lambda is defined. (In contrast, `this` inside an Anonymous Inner Class refers to the inner class instance itself).",
+      "example": "class Test {\n    String name = \"Host Class\";\n    public void doWork() {\n        Runnable r = () -> System.out.println(this.name); // Prints 'Host Class'\n        r.run();\n    }\n}"
+    },
+    {
+      "question": "What is Currying and does Java support it?",
+      "answer": "Currying is a functional programming technique where a function that takes multiple arguments is transformed into a sequence of functions that each take a single argument. While Java doesn't have native syntactic support for currying like Haskell or Scala, you can implement it using nested `Function` interfaces.",
+      "example": "// Normal BiFunction: f(x, y) = x + y\nBiFunction<Integer, Integer, Integer> add = (x, y) -> x + y;\n\n// Curried Function: f(x) -> (f(y) -> x + y)\nFunction<Integer, Function<Integer, Integer>> curriedAdd = x -> y -> x + y;\n\nint result = curriedAdd.apply(5).apply(10); // 15"
+    }
+  ],
+  "tags": ["lambda", "functional", "predicate", "function", "consumer", "supplier", "method-reference"]
+}

@@ -1,0 +1,119 @@
+{
+  "title": "Annotations & Reflection",
+  "slug": "annotations",
+  "category": "Advanced",
+  "difficulty": "Intermediate",
+  "description": "Learn how to define custom annotations, process them using Reflection at runtime, and understand their role in modern frameworks like Spring.",
+  "content": "## Annotations & Reflection\n\nAnnotations provide metadata about the program. They are not part of the program itself and have no direct effect on the operation of the code they annotate. Reflection is an API used to examine or modify the behavior of methods, classes, and interfaces at runtime.\n\n### Annotations\n- **Built-in Annotations**: `@Override`, `@Deprecated`, `@SuppressWarnings`, `@FunctionalInterface`.\n- **Meta-Annotations**: Annotations applied to other annotations when defining them.\n  - `@Retention`: When is the annotation discarded? `SOURCE` (discarded by compiler), `CLASS` (stored in bytecode, discarded at runtime), `RUNTIME` (available at runtime via Reflection).\n  - `@Target`: Where can this annotation be applied? (Methods, Classes, Fields, Parameters).\n\n### Reflection (`java.lang.reflect`)\nReflection allows your Java code to inspect itself. You can instantiate classes, invoke methods, and read/write private fields at runtime without knowing their names at compile time. It is the backbone of almost all modern Java frameworks (Spring, Hibernate, JUnit). However, Reflection is slow and breaks encapsulation (you can bypass `private` modifiers).",
+  "codeExamples": [
+    {
+      "title": "Custom Annotation & Reflection Processing",
+      "language": "java",
+      "code": "import java.lang.annotation.*;\nimport java.lang.reflect.*;\n\n// 1. Define the Custom Annotation\n@Retention(RetentionPolicy.RUNTIME)\n@Target(ElementType.METHOD)\n@interface RunMe {\n    int times() default 1;\n}\n\n// 2. Use the Annotation\nclass MyTests {\n    @RunMe(times = 3)\n    public void testA() {\n        System.out.println(\"Running test A\");\n    }\n\n    public void testB() {\n        System.out.println(\"Running test B (No Annotation)\");\n    }\n}\n\n// 3. Process the Annotation via Reflection\npublic class AnnotationProcessor {\n    public static void main(String[] args) throws Exception {\n        MyTests obj = new MyTests();\n        Class<?> clazz = obj.getClass();\n\n        for (Method method : clazz.getDeclaredMethods()) {\n            if (method.isAnnotationPresent(RunMe.class)) {\n                RunMe annotation = method.getAnnotation(RunMe.class);\n                for (int i = 0; i < annotation.times(); i++) {\n                    method.invoke(obj); // Dynamically invoke the method\n                }\n            }\n        }\n    }\n}",
+      "explanation": "This demonstrates the core mechanism behind frameworks like JUnit. We define a custom @RunMe annotation, apply it to a method, and then use Reflection to scan the class at runtime, find the annotated method, read its metadata (times=3), and invoke it dynamically."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is an Annotation in Java?",
+      "answer": "An annotation is a form of metadata added to Java source code. Classes, methods, variables, parameters, and packages can be annotated. Annotations do not directly affect program semantics, but they can be read by the compiler (to catch errors, like `@Override`), by build tools (to generate code), or by the JVM at runtime (using Reflection) to alter the behavior of the application (like `@Transactional` in Spring).",
+      "example": "@Override\npublic String toString() {\n    // Compiler checks if this actually overrides a superclass method\n    return \"Annotated\";\n}"
+    },
+    {
+      "question": "What is the @Retention policy?",
+      "answer": "`@Retention` is a meta-annotation that determines the lifespan of an annotation. There are three policies:\n1. `SOURCE`: The annotation is discarded by the compiler. Useful only for static analysis (e.g., `@SuppressWarnings`).\n2. `CLASS`: The annotation is recorded in the `.class` file but discarded by the JVM at runtime. (This is the default).\n3. `RUNTIME`: The annotation is retained in the `.class` file AND loaded by the JVM at runtime, meaning it can be read using Reflection.",
+      "example": "@Retention(RetentionPolicy.RUNTIME)\n@interface Inject { \n    // This can be read by Spring at runtime to perform dependency injection\n}"
+    },
+    {
+      "question": "What is the @Target meta-annotation?",
+      "answer": "`@Target` restricts the types of Java elements to which an annotation can be applied. If you try to apply it to a context where it isn't targeted, the compiler throws an error. Common targets include `ElementType.TYPE` (Classes/Interfaces), `ElementType.METHOD` (Methods), `ElementType.FIELD` (Variables), and `ElementType.PARAMETER` (Method arguments).",
+      "example": "@Target({ElementType.METHOD, ElementType.FIELD})\n@interface Autowired { \n    // Can only be placed on a method or a field.\n}"
+    },
+    {
+      "question": "What is Reflection in Java?",
+      "answer": "Reflection is an API (`java.lang.reflect`) that allows a running Java application to examine or modify the runtime behavior of applications running in the JVM. Using reflection, you can inspect a class's methods, fields, and constructors, instantiate objects dynamically, invoke methods by name, and even read or modify `private` fields. It is heavily used by frameworks, ORMs, and debuggers.",
+      "example": "Class<?> clazz = Class.forName(\"com.example.User\");\nObject user = clazz.getDeclaredConstructor().newInstance();\nMethod m = clazz.getDeclaredMethod(\"setName\", String.class);\nm.invoke(user, \"Alice\");"
+    },
+    {
+      "question": "What are the drawbacks of using Reflection?",
+      "answer": "1. **Performance Overhead**: Reflective operations are significantly slower than direct code access because they involve dynamic type resolution that prevents JIT compiler optimizations. \n2. **Security Restrictions**: Reflection requires runtime permissions, which might fail under a strict Java Security Manager. \n3. **Breaks Encapsulation**: Reflection can access `private` fields and methods via `setAccessible(true)`, violating OOP encapsulation and potentially causing unstable behavior.",
+      "example": "Field privateField = User.class.getDeclaredField(\"secretKey\");\nprivateField.setAccessible(true); // Breaks encapsulation!\nString secret = (String) privateField.get(userInstance);"
+    },
+    {
+      "question": "How do you create a custom Annotation?",
+      "answer": "You create a custom annotation using the `@interface` keyword. You typically add meta-annotations like `@Retention` and `@Target` above it. Inside the annotation, you can declare elements (which look like abstract methods). These elements can have default values. The elements are restricted to primitives, Strings, Class, Enums, other Annotations, or arrays of the preceding types.",
+      "example": "@Retention(RetentionPolicy.RUNTIME)\n@Target(ElementType.TYPE)\npublic @interface Table {\n    String name(); // Required element\n    String schema() default \"public\"; // Optional element\n}"
+    },
+    {
+      "question": "Can an annotation extend another annotation?",
+      "answer": "No. Annotations cannot use the `extends` keyword to inherit from other annotations or classes. Every annotation implicitly extends `java.lang.annotation.Annotation`, and Java does not allow extending multiple classes/annotations in this context. However, modern frameworks (like Spring) use 'Meta-Annotations' (applying one annotation onto another) to simulate inheritance and create composed/composite annotations.",
+      "example": "// @interface Child extends Parent { } // COMPILE ERROR\n\n// Spring Composite Annotation approach:\n@Service\n@Transactional\n@Retention(RetentionPolicy.RUNTIME)\npublic @interface TransactionalService { }"
+    },
+    {
+      "question": "What does setAccessible(true) do?",
+      "answer": "`setAccessible(true)` is a method available on Reflection objects (`Field`, `Method`, `Constructor`). When invoked, it suppresses the JVM's standard Java language access control checks (public, protected, private) for that specific reflective object. This is how ORM frameworks like Hibernate can map database rows directly into the `private` fields of your entity classes without requiring public setter methods.",
+      "example": "Field passwordField = User.class.getDeclaredField(\"password\");\n// Without this, the next line throws IllegalAccessException\npasswordField.setAccessible(true); \npasswordField.set(userObject, \"newPassword\");"
+    },
+    {
+      "question": "What is the difference between getDeclaredMethods() and getMethods()?",
+      "answer": "In the Reflection API, `getMethods()` returns an array containing all **public** methods of the class, including those inherited from superclasses and superinterfaces. `getDeclaredMethods()` returns an array containing all methods (public, protected, default, and **private**) that are explicitly declared within that specific class, but it does NOT include inherited methods.",
+      "example": "Class<?> clazz = Child.class;\n// Returns public methods from Child, Parent, and Object\nMethod[] publicMethods = clazz.getMethods(); \n\n// Returns public, private, protected from Child only\nMethod[] declaredMethods = clazz.getDeclaredMethods(); "
+    },
+    {
+      "question": "How is Reflection used in the Spring Framework?",
+      "answer": "Spring is heavily reliant on Reflection. It uses Reflection to: \n1. **Component Scanning**: Find classes annotated with `@Component`, `@Service`, etc., by scanning the classpath. \n2. **Dependency Injection**: Read `@Autowired` annotations and reflectively inject dependencies into private fields or constructors. \n3. **AOP & Proxies**: Intercept method calls on beans to inject transactional logic or security checks dynamically at runtime.",
+      "example": "// Spring reads this metadata at runtime via Reflection\n@RestController \nclass MyController {\n    @Autowired \n    private MyService service; // Injected reflectively\n}"
+    },
+    {
+      "question": "Can you instantiate a class with a private constructor using Reflection?",
+      "answer": "Yes, Reflection can bypass access modifiers. You can obtain the private constructor using `getDeclaredConstructor()`, call `setAccessible(true)` on it, and then invoke `newInstance()`. This is a common way that attackers or poorly written frameworks can break the Singleton design pattern.",
+      "example": "Constructor<Singleton> constructor = Singleton.class.getDeclaredConstructor();\nconstructor.setAccessible(true);\nSingleton brokenInstance = constructor.newInstance(); // Creates a second instance!"
+    },
+    {
+      "question": "What is @Inherited?",
+      "answer": "`@Inherited` is a meta-annotation. By default, annotations on a superclass are not inherited by its subclasses. If an annotation is defined with `@Inherited`, and that annotation is applied to a class, then any subclass of that class will automatically inherit the annotation. Note: This only applies to Class declarations, not to methods or fields.",
+      "example": "@Inherited\n@Retention(RetentionPolicy.RUNTIME)\n@interface Auditable {}\n\n@Auditable class Parent {}\nclass Child extends Parent {} // Child is automatically @Auditable"
+    },
+    {
+      "question": "What is a Repeatable Annotation?",
+      "answer": "Prior to Java 8, if you wanted to apply the same annotation multiple times to a declaration, you had to wrap it in a container annotation. Java 8 introduced the `@Repeatable` meta-annotation, which allows an annotation to be applied multiple times to the same element directly. The compiler automatically wraps them in the container annotation behind the scenes.",
+      "example": "@Repeatable(Schedules.class)\n@interface Schedule { String day(); }\n@interface Schedules { Schedule[] value(); } // Container\n\n// Java 8+ usage:\n@Schedule(day=\"Monday\")\n@Schedule(day=\"Friday\")\npublic void doWork() {}"
+    },
+    {
+      "question": "How do you invoke a method using Reflection?",
+      "answer": "First, obtain the `Method` object using `Class.getDeclaredMethod(\"methodName\", ParameterTypes.class)`. Then, call `method.invoke(instance, args)`. If the method is static, you pass `null` as the instance argument. If the method is private, you must call `setAccessible(true)` before invoking it.",
+      "example": "Method m = Math.class.getDeclaredMethod(\"max\", int.class, int.class);\n// Static method, so instance is null\nint result = (int) m.invoke(null, 10, 20); "
+    },
+    {
+      "question": "What is Annotation Processing at Compile Time?",
+      "answer": "While frameworks like Spring process annotations at *Runtime* using Reflection, tools like Lombok or MapStruct process annotations at *Compile Time*. They use the Pluggable Annotation Processing API (JSR 269). The compiler pauses, allows the processor to read the annotations (like `@Getter`), generate new Java source files or modify the Abstract Syntax Tree (AST), and then resumes compilation. This avoids the runtime performance penalty of Reflection.",
+      "example": "// Lombok processes this at compile-time to generate a real getAge() method\n@Getter\nprivate int age;"
+    },
+    {
+      "question": "Can you change the value of a final field using Reflection?",
+      "answer": "Yes, but it is extremely dangerous and highly discouraged. If you get a `Field` reference to a `final` field, call `setAccessible(true)`, and try to modify it, it *might* work. However, if the field is a constant (like `private final int MAX = 10;`), the JIT compiler often \"inlines\" that value directly into the code where it's used. Reflection will change the value in memory, but the inlined code will still use the old value, resulting in unpredictable behavior.",
+      "example": "Field field = obj.getClass().getDeclaredField(\"finalValue\");\nfield.setAccessible(true);\nfield.set(obj, \"New String\"); // Modifies the final field"
+    },
+    {
+      "question": "What is Class.forName()?",
+      "answer": "`Class.forName(String className)` is a static method that dynamically loads a class into memory using its fully qualified string name, and returns the `Class` object associated with it. If the class is not found in the classpath, it throws a `ClassNotFoundException`. It was famously used to dynamically load JDBC drivers into memory before JDBC 4.0 auto-discovery.",
+      "example": "try {\n    Class<?> dbDriver = Class.forName(\"com.mysql.cj.jdbc.Driver\");\n} catch (ClassNotFoundException e) {\n    System.out.println(\"MySQL Driver not found in classpath\");\n}"
+    },
+    {
+      "question": "What are the performance implications of Annotation scanning?",
+      "answer": "If an application uses runtime Reflection to scan the entire classpath for specific annotations (e.g., finding all `@Controller` classes on startup), it can drastically slow down application boot times, especially in massive codebases. This is a common critique of older Spring versions. Modern frameworks resolve this by generating static index files at compile time (like Spring's `spring-context-indexer`) to avoid slow classpath scanning at runtime.",
+      "example": "// Slow: Scanning 10,000 classes at startup\n// Fast: Reading a pre-compiled META-INF/spring.components file"
+    },
+    {
+      "question": "How do you read annotations from a class?",
+      "answer": "Once you have the `Class` object (or `Method`/`Field` object), you can use methods like `isAnnotationPresent(Annotation.class)` to check if it exists, and `getAnnotation(Annotation.class)` to retrieve the actual annotation instance. Once you have the instance, you can call its defined elements like normal methods to retrieve the metadata values.",
+      "example": "Class<?> clazz = MyService.class;\nif (clazz.isAnnotationPresent(Service.class)) {\n    Service serviceAnn = clazz.getAnnotation(Service.class);\n    String beanName = serviceAnn.value();\n}"
+    },
+    {
+      "question": "Why is java.lang.reflect.Proxy useful?",
+      "answer": "The `Proxy` class allows you to dynamically create proxy classes and instances at runtime that implement one or more interfaces. You provide an `InvocationHandler` that intercepts every single method call made on the proxy object. This is the core engine behind AOP (Aspect Oriented Programming) in Java. When you add `@Transactional` in Spring, Spring creates a dynamic Proxy around your class to start a database transaction, invoke your actual method, and then commit the transaction.",
+      "example": "MyInterface proxy = (MyInterface) Proxy.newProxyInstance(\n    MyInterface.class.getClassLoader(),\n    new Class<?>[] { MyInterface.class },\n    new MyInvocationHandler(realTargetObject)\n);"
+    }
+  ],
+  "tags": ["annotations", "reflection", "metadata", "proxy", "aop"]
+}

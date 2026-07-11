@@ -1,0 +1,94 @@
+{
+  "title": "Spring Security & JWT",
+  "slug": "spring-security",
+  "category": "Frameworks",
+  "difficulty": "Advanced",
+  "description": "Secure your Spring applications using the Spring Security framework. Understand Authentication, Authorization, Filter Chains, and Stateless JWTs.",
+  "content": "## Spring Security\n\nSpring Security is a powerful and highly customizable authentication and access-control framework. It is the de-facto standard for securing Spring-based applications.\n\n### Key Concepts\n- **Authentication**: \"Who are you?\" The process of verifying a user's identity (e.g., username/password login).\n- **Authorization**: \"What are you allowed to do?\" The process of verifying if an authenticated user has permission to access a specific resource (e.g., only ADMINs can delete users).\n- **Security Filter Chain**: Spring Security is fundamentally implemented as a chain of standard Servlet Filters. Every incoming HTTP request passes through this chain. If a filter detects a security violation, it rejects the request before it ever reaches your controllers.\n\n### Authentication Architectures\n- **Stateful (Session-based)**: Traditional web apps. The server stores a session in memory and gives the client a Session ID cookie. Not ideal for highly scalable microservices.\n- **Stateless (Token-based/JWT)**: Modern REST APIs. The server issues a JSON Web Token (JWT) after login. The client sends the token in the `Authorization` header on subsequent requests. The server verifies the token cryptographically without needing to store any session state.",
+  "codeExamples": [
+    {
+      "title": "Modern Spring Security Configuration (Java 17+)",
+      "language": "java",
+      "code": "import org.springframework.context.annotation.*;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;\nimport org.springframework.security.web.SecurityFilterChain;\nimport org.springframework.security.config.http.SessionCreationPolicy;\n\n@Configuration\n@EnableWebSecurity\npublic class SecurityConfig {\n\n    // The SecurityFilterChain replaces the legacy WebSecurityConfigurerAdapter\n    @Bean\n    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {\n        http\n            // Disable CSRF for stateless REST APIs\n            .csrf(csrf -> csrf.disable())\n            // Make the session stateless (No HTTP Sessions)\n            .sessionManagement(session -> \n                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))\n            // Configure Authorization rules\n            .authorizeHttpRequests(auth -> auth\n                .requestMatchers(\"/api/auth/**\").permitAll() // Public login endpoints\n                .requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\") // Admin only\n                .anyRequest().authenticated() // Everything else requires login\n            );\n            \n        // In a real app, you would add a custom JWT filter here:\n        // http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);\n\n        return http.build();\n    }\n}",
+      "explanation": "This demonstrates a modern, Lambda-based configuration for Spring Security. It disables CSRF and Sessions (crucial for REST APIs), opens up authentication endpoints to the public, secures admin endpoints, and requires authentication for all other requests."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between Authentication and Authorization?",
+      "answer": "Authentication is the process of verifying *who* the user is (Identity). It usually involves credentials like a username/password, biometric scan, or an API key. Authorization happens *after* authentication; it is the process of verifying what the authenticated user is *allowed to do* (Permissions/Roles). For example, a user might successfully authenticate (log in), but fail authorization when trying to access an Admin dashboard.",
+      "example": "Authentication: User provides valid password.\nAuthorization: System checks if User has the 'ROLE_ADMIN'."
+    },
+    {
+      "question": "How does Spring Security work under the hood?",
+      "answer": "Spring Security is built entirely on the standard Java Servlet Filter API. It intercepts incoming HTTP requests using a single filter called the `DelegatingFilterProxy`. This proxy delegates the work to a massive internal chain of filters (the `SecurityFilterChain`). Each filter in the chain handles a specific security concern (e.g., checking for CORS, checking for CSRF, parsing basic auth headers, parsing session cookies). If all filters pass, the request is finally forwarded to the `DispatcherServlet` and your Controller.",
+      "example": "// Request -> Filter1 (CORS) -> Filter2 (JWT Auth) -> Filter3 (Authorization) -> Controller"
+    },
+    {
+      "question": "What is the SecurityContext?",
+      "answer": "The `SecurityContext` is the core object in Spring Security that holds the details of the currently authenticated user (the `Authentication` object). By default, Spring Security uses a `ThreadLocal` to store the SecurityContext. This means the security details are bound to the specific thread processing the HTTP request, allowing you to access the logged-in user from anywhere in your application without passing it as a method parameter.",
+      "example": "// Fetching the current logged-in user from anywhere in the code:\nAuthentication auth = SecurityContextHolder.getContext().getAuthentication();\nString username = auth.getName();"
+    },
+    {
+      "question": "What is the UserDetailsService?",
+      "answer": "`UserDetailsService` is a core interface in Spring Security. It has only one method: `loadUserByUsername(String username)`. During the authentication process, the authentication provider calls this method to retrieve the user's details (password hash, roles, account status) from your database. Spring then compares the password hash retrieved by this service against the password provided by the user.",
+      "example": "@Service\npublic class CustomUserDetailsService implements UserDetailsService {\n    public UserDetails loadUserByUsername(String username) {\n        // Fetch user from DB and return a Spring UserDetails object\n    }\n}"
+    },
+    {
+      "question": "What is a PasswordEncoder?",
+      "answer": "You should never store passwords in plain text in a database. A `PasswordEncoder` is an interface used to perform a one-way cryptographic hash of a password before saving it to the database, and to verify incoming passwords against the saved hash. The current industry standard implementation provided by Spring is `BCryptPasswordEncoder`, which automatically incorporates a randomized 'salt' into the hash to protect against rainbow table attacks.",
+      "example": "@Bean\npublic PasswordEncoder passwordEncoder() {\n    return new BCryptPasswordEncoder();\n}"
+    },
+    {
+      "question": "What is CSRF and why is it disabled in stateless APIs?",
+      "answer": "CSRF (Cross-Site Request Forgery) is an attack where a malicious website tricks a user's browser into executing unwanted actions on a different website where the user is currently logged in. It relies entirely on the fact that browsers automatically send Session Cookies with every request. If your API is strictly Stateless and uses JWTs sent via the `Authorization` header (which browsers do *not* send automatically), CSRF is completely impossible. Therefore, CSRF protection is safely disabled in stateless REST APIs to improve performance.",
+      "example": "// In WebSecurityConfig:\nhttp.csrf(csrf -> csrf.disable()); // Safe IF using stateless JWTs"
+    },
+    {
+      "question": "What is a JSON Web Token (JWT)?",
+      "answer": "A JWT is an open standard (RFC 7519) that defines a compact and self-contained way for securely transmitting information between parties as a JSON object. It consists of three parts: Header (algorithm), Payload (data/claims like username and roles), and Signature. The Signature is generated using a secret key known only to the server. Because of the signature, the server can verify the token's authenticity without needing to look it up in a database.",
+      "example": "Header: {\"alg\": \"HS256\"}\nPayload: {\"sub\": \"alice\", \"role\": \"ADMIN\", \"exp\": 1718000000}\nSignature: HMACSHA256(base64UrlEncode(Header) + \".\" + base64UrlEncode(Payload), secretKey)"
+    },
+    {
+      "question": "How do you implement JWT authentication in Spring Security?",
+      "answer": "1) You create a custom Filter (extending `OncePerRequestFilter`) and insert it into the `SecurityFilterChain` before the standard `UsernamePasswordAuthenticationFilter`. 2) For every incoming request, this filter checks the `Authorization` header for a Bearer token. 3) If found, it cryptographically verifies the signature and expiration. 4) If valid, it extracts the username and roles from the token payload, creates an `Authentication` object, and injects it into the `SecurityContextHolder`. The request is now authenticated.",
+      "example": "// In CustomJwtFilter:\nif (jwtUtils.validateToken(token)) {\n    UsernamePasswordAuthenticationToken auth = new ...;\n    SecurityContextHolder.getContext().setAuthentication(auth);\n}"
+    },
+    {
+      "question": "Why use JWT over traditional HTTP Sessions?",
+      "answer": "Traditional sessions require the server to store session data in memory. If you have 3 load-balanced servers, a user who logs into Server A cannot make their next request to Server B unless you implement complex \"Sticky Sessions\" or a centralized Redis cache. JWTs are stateless. The token *itself* contains all the user data. The server stores nothing. A user can log into Server A, get a JWT, and send it to Server B. Server B verifies the signature and processes the request perfectly. This makes scaling microservices incredibly easy.",
+      "example": "// Server memory with 1 million active users:\n// Stateful: 1 million Session objects in RAM.\n// Stateless (JWT): 0 Session objects in RAM."
+    },
+    {
+      "question": "What is the primary drawback of using JWTs?",
+      "answer": "Because JWTs are stateless and the server stores no record of them, they cannot be easily revoked or invalidated before they naturally expire. If a user's token is stolen, or if an Admin bans a user, that user's JWT remains perfectly valid until its expiration time is reached. The only absolute way to revoke a JWT is to change the server's master secret key, which invalidates *every single token* for *every user*.",
+      "example": "// Admin bans User A.\n// User A's JWT still has 30 minutes left before expiry.\n// User A can continue using the API for 30 minutes."
+    },
+    {
+      "question": "How do you solve the JWT revocation problem?",
+      "answer": "You use a short-lived Access Token combined with a long-lived Refresh Token. \n1. The Access Token (JWT) expires very quickly (e.g., 15 minutes).\n2. The Refresh Token (a random UUID) is stored in the database and lasts for days.\n3. When the Access Token expires, the client sends the Refresh Token to a special endpoint.\n4. The server checks the database. If the user is banned, or the refresh token was revoked, it denies the request. If valid, it issues a new 15-minute Access Token.",
+      "example": "// Access Token: fast, stateless, cannot be revoked, but dies quickly.\n// Refresh Token: slow (requires DB hit), stateful, easily revoked."
+    },
+    {
+      "question": "What is Method Level Security?",
+      "answer": "While `SecurityFilterChain` secures entire URL paths (like `/api/admin/**`), Method Level Security allows you to secure individual method executions regardless of how they were called. You enable it with `@EnableMethodSecurity`. You can then use annotations like `@PreAuthorize` or `@PostAuthorize` directly on your Service or Controller methods. Spring uses AOP proxies to intercept the method call and check the authorization rules.",
+      "example": "@PreAuthorize(\"hasRole('ADMIN') or #username == authentication.name\")\npublic void updateUser(String username, UserDto data) {\n    // Only admins, or the user themselves, can execute this method.\n}"
+    },
+    {
+      "question": "What is OAuth2 and OIDC?",
+      "answer": "OAuth2 is an authorization framework that allows a user to grant a third-party application limited access to their resources (like granting a printing app access to your Google Drive photos) without sharing their password. OpenID Connect (OIDC) is an authentication layer built *on top* of OAuth2. It standardizes the process of proving \"Who you are\" by issuing an ID Token (which is a JWT). This is the technology powering \"Log in with Google/GitHub/Facebook\" buttons.",
+      "example": "// OAuth2: \"I grant this app permission to read my emails\"\n// OIDC: \"I am Bob, and here is a cryptographic proof from Google stating I am Bob.\""
+    },
+    {
+      "question": "What is the difference between hasRole and hasAuthority?",
+      "answer": "In Spring Security, an Authority is a granular permission (e.g., `READ_PRIVILEGE`, `WRITE_PRIVILEGE`). A Role is just a convention-based Authority that starts with the prefix `ROLE_` (e.g., `ROLE_ADMIN`). The `hasRole(\"ADMIN\")` method automatically prepends `ROLE_` behind the scenes and checks for `ROLE_ADMIN`. The `hasAuthority(\"ADMIN\")` method checks for the exact string `ADMIN` without prepending anything.",
+      "example": "// If the user has GrantedAuthority \"ROLE_ADMIN\"\nhasRole(\"ADMIN\"); // returns true\nhasAuthority(\"ROLE_ADMIN\"); // returns true\nhasAuthority(\"ADMIN\"); // returns false"
+    },
+    {
+      "question": "How do you test secured endpoints in Spring Boot?",
+      "answer": "Spring Security provides excellent testing support via the `spring-security-test` module. Using `@WebMvcTest` or `@SpringBootTest` with `MockMvc`, you can easily mock authenticated users using the `@WithMockUser` annotation. This bypasses the actual login process and injects a fake `Authentication` object directly into the `SecurityContext` for the duration of the test.",
+      "example": "@Test\n@WithMockUser(username = \"admin\", roles = {\"ADMIN\"})\npublic void testAdminEndpoint() throws Exception {\n    mockMvc.perform(get(\"/api/admin\"))\n           .andExpect(status().isOk());\n}"
+    }
+  ],
+  "tags": ["spring-security", "jwt", "authentication", "authorization", "stateless"]
+}

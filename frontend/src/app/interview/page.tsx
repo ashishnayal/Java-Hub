@@ -140,7 +140,7 @@ export default function InterviewPage() {
                       <div className="interview-question" onClick={() => toggleQuestion(key)}>
                         <span className="interview-q-text">
                           <span className="interview-q-number">Q{i + 1}</span>
-                          {q}
+                          {typeof q === 'string' ? q : q.question}
                         </span>
                         <span className={`interview-toggle ${openQuestions.has(key) ? "open" : ""}`}>
                           ▼
@@ -148,19 +148,32 @@ export default function InterviewPage() {
                       </div>
                       {openQuestions.has(key) && (
                         <div className="interview-answer">
-                          <p>
-                            This is a key interview question about <strong>{topic.title}</strong>.
-                            To answer this well, make sure you understand the core concepts and can
-                            provide practical code examples.
-                          </p>
-                          <p style={{ marginTop: "8px" }}>
-                            📚 <Link
-                              href={`/topics/${topic.slug}`}
-                              style={{ color: "var(--java-orange)", textDecoration: "underline" }}
-                            >
-                              Read the full {topic.title} guide with code examples →
-                            </Link>
-                          </p>
+                          {typeof q === 'string' ? (
+                            <>
+                              <p>
+                                This is a key interview question about <strong>{topic.title}</strong>.
+                                To answer this well, make sure you understand the core concepts and can
+                                provide practical code examples.
+                              </p>
+                              <p style={{ marginTop: "8px" }}>
+                                📚 <Link
+                                  href={`/topics/${topic.slug}`}
+                                  style={{ color: "var(--java-orange)", textDecoration: "underline" }}
+                                >
+                                  Read the full {topic.title} guide with code examples →
+                                </Link>
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ marginBottom: "1rem" }}>{q.answer}</div>
+                              {q.example && (
+                                <div style={{ backgroundColor: "#1e1e1e", color: "#d4d4d4", padding: "1rem", borderRadius: "8px", fontFamily: "monospace", overflowX: "auto", whiteSpace: "pre-wrap" }}>
+                                  <pre style={{ margin: 0, fontFamily: "inherit" }}>{q.example}</pre>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

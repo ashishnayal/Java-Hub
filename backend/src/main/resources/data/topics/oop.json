@@ -1,0 +1,119 @@
+{
+  "title": "Object-Oriented Programming",
+  "slug": "oop",
+  "category": "Core Java",
+  "difficulty": "Beginner",
+  "description": "Master the four pillars of OOP in Java: Encapsulation, Inheritance, Polymorphism, and Abstraction. These form the foundation of Java development.",
+  "content": "## Object-Oriented Programming in Java\n\nJava is a class-based, object-oriented programming language. The primary goal of OOP is to bind together the data and the functions that operate on them so that no other part of the code can access this data except that function.\n\n### The Four Pillars\n\n1. **Encapsulation**\nThe mechanism of wrapping the data (variables) and code acting on the data (methods) together as a single unit. It involves data hiding using access modifiers.\n\n2. **Inheritance**\nA mechanism where one object acquires all the properties and behaviors of a parent object. It promotes code reusability and establishes an IS-A relationship.\n\n3. **Polymorphism**\nDerived from \"poly\" (many) and \"morphs\" (forms). In Java, it is achieved via method overloading (compile-time) and method overriding (run-time).\n\n4. **Abstraction**\nHiding implementation details and showing only functionality to the user, typically achieved via abstract classes and interfaces.",
+  "codeExamples": [
+    {
+      "title": "Four Pillars of OOP in Action",
+      "language": "java",
+      "code": "// ENCAPSULATION\nclass BankAccount {\n    private double balance; // hidden field\n\n    public void deposit(double amount) {\n        if (amount > 0) balance += amount;\n    }\n\n    public double getBalance() { return balance; }\n}\n\n// INHERITANCE\nclass Animal {\n    void speak() { System.out.println(\"...\"); }\n}\nclass Dog extends Animal {\n    @Override\n    void speak() { System.out.println(\"Woof!\"); } // POLYMORPHISM\n}\n\n// ABSTRACTION\nabstract class Shape {\n    abstract double area();\n}\nclass Circle extends Shape {\n    private double radius;\n    Circle(double r) { this.radius = r; }\n    @Override\n    double area() { return Math.PI * radius * radius; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankAccount acc = new BankAccount();\n        acc.deposit(100.50);\n        System.out.println(\"Balance: \" + acc.getBalance());\n        \n        Animal myDog = new Dog();\n        myDog.speak();\n    }\n}",
+      "explanation": "This example demonstrates all four OOP pillars. Encapsulation protects the balance. Inheritance allows Dog to extend Animal. Polymorphism overrides the speak method. Abstraction hides the area calculation logic in Shape."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between an Abstract Class and an Interface in Java?",
+      "answer": "Historically, abstract classes could have state (instance variables) and concrete methods, whereas interfaces could only have public static final variables and abstract methods. Since Java 8, interfaces can have default and static methods, and since Java 9, private methods. However, the core difference remains structural: a class can implement multiple interfaces (multiple inheritance of type), but can only extend one abstract class. Abstract classes are typically used for objects that share a core identity (IS-A), while interfaces define a capability or contract (CAN-DO).",
+      "example": "interface Flyable {\n    void fly();\n    default void land() { System.out.println(\"Landing\"); }\n}\n\nabstract class Animal {\n    String name;\n    abstract void speak();\n}\n\nclass Bird extends Animal implements Flyable {\n    void speak() { System.out.println(\"Chirp\"); }\n    public void fly() { System.out.println(\"Flying\"); }\n}"
+    },
+    {
+      "question": "Can you override a static method in Java?",
+      "answer": "No, you cannot override a static method. Static methods are bound to the class, not the instance, at compile time (static binding). If a subclass defines a static method with the same signature as a static method in the superclass, the subclass method simply 'hides' the superclass method. This is known as Method Hiding, not Method Overriding. Polymorphism does not apply to static methods.",
+      "example": "class Parent {\n    static void print() { System.out.println(\"Parent\"); }\n}\nclass Child extends Parent {\n    static void print() { System.out.println(\"Child\"); }\n}\npublic class Main {\n    public static void main(String[] args) {\n        Parent p = new Child();\n        p.print(); // Prints 'Parent', not 'Child'!\n    }\n}"
+    },
+    {
+      "question": "What is the Diamond Problem and how does Java solve it?",
+      "answer": "The Diamond Problem is an ambiguity that arises in multiple inheritance when a class inherits from two parent classes that both contain a method with the same signature. Java prevents this at the class level by simply not supporting multiple inheritance of classes (a class can only extend one superclass). However, with Java 8 default methods, a class can implement two interfaces with the same default method. Java forces the implementing class to explicitly override the conflicting method and resolve the ambiguity.",
+      "example": "interface A { default void show() { System.out.println(\"A\"); } }\ninterface B { default void show() { System.out.println(\"B\"); } }\n\nclass C implements A, B {\n    @Override\n    public void show() {\n        // Explicitly resolving the ambiguity\n        A.super.show();\n        B.super.show();\n    }\n}"
+    },
+    {
+      "question": "What is the difference between Method Overloading and Method Overriding?",
+      "answer": "Method Overloading (Compile-time Polymorphism / Static Binding) occurs when two or more methods in the same class have the same name but different parameters (type, number, or order). The return type does not matter. Method Overriding (Run-time Polymorphism / Dynamic Binding) occurs when a subclass provides a specific implementation for a method that is already defined in its superclass. The method signature and return type must be exactly the same (or covariant for return types).",
+      "example": "// Overloading\nclass MathUtil {\n    int add(int a, int b) { return a + b; }\n    double add(double a, double b) { return a + b; }\n}\n\n// Overriding\nclass Parent {\n    void greet() { System.out.println(\"Hello\"); }\n}\nclass Child extends Parent {\n    @Override\n    void greet() { System.out.println(\"Hi there!\"); }\n}"
+    },
+    {
+      "question": "Why is multiple inheritance not supported in Java for classes?",
+      "answer": "Java does not support multiple inheritance of classes to prevent the Diamond Problem—an ambiguity that occurs when two parent classes define the same method. If a child class calls that method, the compiler wouldn't know which parent's implementation to execute. To keep the language simple and avoid complex dependency graphs, James Gosling and the Java team omitted multiple class inheritance, opting instead for multiple inheritance of interfaces (where no state is inherited).",
+      "example": "// Hypothetical Diamond Problem (Illegal in Java)\n// class A { void foo() { print(\"A\"); } }\n// class B { void foo() { print(\"B\"); } }\n// class C extends A, B {} \n// C obj = new C(); obj.foo(); // Ambiguity!"
+    },
+    {
+      "question": "What is Constructor Chaining in Java? How is it achieved?",
+      "answer": "Constructor chaining is the process of calling one constructor from another constructor within the same class (using `this()`) or in a parent class (using `super()`). It is primarily used to avoid duplicate code when multiple constructors require the same initialization logic. The `this()` or `super()` call must be the very first statement inside the constructor.",
+      "example": "class Employee {\n    String name;\n    int id;\n    \n    public Employee() {\n        this(\"Unknown\", 0); // Calls the parameterized constructor\n    }\n    \n    public Employee(String name, int id) {\n        this.name = name;\n        this.id = id;\n    }\n}"
+    },
+    {
+      "question": "Can you instantiate an abstract class?",
+      "answer": "No, you cannot instantiate an abstract class directly using the `new` keyword because it is incomplete by definition. However, an abstract class does have a constructor. When a concrete subclass is instantiated, the abstract class's constructor is called (via `super()`) to initialize the inherited fields before the subclass is fully initialized.",
+      "example": "abstract class Vehicle {\n    String brand;\n    Vehicle(String brand) { this.brand = brand; }\n}\nclass Car extends Vehicle {\n    Car() { super(\"Toyota\"); } // Super constructor is invoked\n}\n// Vehicle v = new Vehicle(); // ILLEGAL"
+    },
+    {
+      "question": "What is the difference between IS-A and HAS-A relationships?",
+      "answer": "IS-A represents inheritance (using the `extends` or `implements` keyword). It creates a tight coupling where a child is a specialized version of the parent (e.g., a Dog IS-A Animal). HAS-A represents composition or aggregation. It means an object contains references to other objects (e.g., a Car HAS-A Engine). Composition is generally preferred over inheritance because it promotes loose coupling and greater flexibility at runtime.",
+      "example": "// IS-A (Inheritance)\nclass Dog extends Animal { }\n\n// HAS-A (Composition)\nclass Car {\n    private Engine engine; // Car HAS-A Engine\n    public Car(Engine e) { this.engine = e; }\n}"
+    },
+    {
+      "question": "What is Covariant Return Type?",
+      "answer": "Introduced in Java 5, covariant return type allows an overriding method in a subclass to return a type that is a subtype of the return type declared in the overridden superclass method. This removes the need for explicit downcasting when dealing with subclass instances, making the code cleaner and more type-safe.",
+      "example": "class Animal { }\nclass Dog extends Animal { }\n\nclass AnimalFactory {\n    Animal create() { return new Animal(); }\n}\nclass DogFactory extends AnimalFactory {\n    @Override\n    Dog create() { return new Dog(); } // Covariant return type\n}"
+    },
+    {
+      "question": "Does Java support Pass-by-Value or Pass-by-Reference?",
+      "answer": "Java is strictly Pass-by-Value. When a primitive type is passed to a method, a copy of the value is passed. When an object is passed, a copy of the *reference* (the memory address) is passed. Because it's a copy of the reference, you can modify the object's internal state (which affects the original object), but you cannot change the original reference to point to a completely different object.",
+      "example": "void modifyReference(StringBuilder sb) {\n    sb.append(\" World\"); // Modifies original object\n    sb = new StringBuilder(\"New Object\"); // Does NOT change original reference\n}"
+    },
+    {
+      "question": "What is a Marker Interface? Why was it used?",
+      "answer": "A Marker Interface is an interface that contains no methods or fields. It is used to logically tag a class to signal to the JVM or a framework that the class possesses a specific property. Common examples include `Serializable`, `Cloneable`, and `Remote`. While still used, modern Java development heavily favors Annotations (like `@Entity` or `@Deprecated`) over marker interfaces to provide metadata because annotations are more flexible.",
+      "example": "import java.io.Serializable;\n\n// Implementing Serializable tags this class for the JVM's serialization mechanism\nclass User implements Serializable {\n    private String username;\n}"
+    },
+    {
+      "question": "What is the 'super' keyword used for?",
+      "answer": "The `super` keyword in Java is a reference variable used to refer to the immediate parent class object. It has three primary uses: 1) To invoke the parent class's constructor (`super()`). 2) To invoke a parent class's method when it has been overridden by the subclass. 3) To access a parent class's field if it is hidden by a field in the subclass with the same name.",
+      "example": "class Parent {\n    int age = 50;\n    void display() { System.out.println(\"Parent\"); }\n}\nclass Child extends Parent {\n    int age = 20;\n    void show() {\n        System.out.println(super.age); // Accesses parent's age (50)\n        super.display(); // Calls parent's display method\n    }\n}"
+    },
+    {
+      "question": "Can we overload the main method in Java?",
+      "answer": "Yes, the `main` method can be overloaded just like any other method in Java. You can create multiple `main` methods with different parameter lists. However, when you run the class, the JVM will strictly look for the exact signature `public static void main(String[] args)`. The other overloaded `main` methods will not be executed unless explicitly called from the primary `main` method.",
+      "example": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Standard Main\");\n        main(10);\n    }\n    // Overloaded main\n    public static void main(int arg) {\n        System.out.println(\"Overloaded Main: \" + arg);\n    }\n}"
+    },
+    {
+      "question": "What is the significance of the 'final' keyword?",
+      "answer": "The `final` keyword is used to restrict the modification of an entity. 1) Final variables become constants; their value cannot be reassigned once initialized. 2) Final methods cannot be overridden by subclasses, ensuring the implementation cannot be altered. 3) Final classes cannot be extended (inherited), which is often used for security and immutability (e.g., `java.lang.String`).",
+      "example": "final class SecureConfig { // Cannot be extended\n    final String secretKey = \"XYZ123\"; // Cannot be reassigned\n    \n    final void printConfig() { // Cannot be overridden\n        System.out.println(\"Config is secure\");\n    }\n}"
+    },
+    {
+      "question": "Can an interface extend another interface?",
+      "answer": "Yes, an interface can extend another interface using the `extends` keyword. Furthermore, unlike classes, an interface can extend *multiple* interfaces at once. The extending interface inherits all the abstract methods from its parent interfaces. A class that eventually implements the child interface must provide concrete implementations for all methods defined in the hierarchy.",
+      "example": "interface Printable { void print(); }\ninterface Scannable { void scan(); }\n\n// Interface extending multiple interfaces\ninterface MultiFunctionDevice extends Printable, Scannable {\n    void fax();\n}"
+    },
+    {
+      "question": "What is Association, Aggregation, and Composition?",
+      "answer": "These define relationships between objects. \n- **Association**: A general relationship (e.g., a Teacher and a Student). Both can exist independently.\n- **Aggregation**: A weak \"HAS-A\" relationship. The child can exist independently of the parent (e.g., a Department and Teachers). If the Department is destroyed, Teachers still exist.\n- **Composition**: A strong \"HAS-A\" relationship. The child cannot exist without the parent (e.g., a House and Rooms). If the House is destroyed, the Rooms are destroyed too.",
+      "example": "// Composition (Strong)\nclass House {\n    private final Room room; // Room dies if House dies\n    public House() { this.room = new Room(); }\n}\n// Aggregation (Weak)\nclass Department {\n    private List<Teacher> teachers; // Teachers exist outside the Department\n}"
+    },
+    {
+      "question": "Can we declare a constructor as final?",
+      "answer": "No, constructors cannot be declared as `final`. The `final` keyword prevents a method from being overridden. However, constructors are never inherited in Java—they are specific to the class they are declared in. Since they cannot be inherited, they cannot be overridden, making the `final` keyword mathematically meaningless and illegal for constructors.",
+      "example": "class Person {\n    // final Person() {} // COMPILE TIME ERROR\n    Person() { System.out.println(\"Valid Constructor\"); }\n}"
+    },
+    {
+      "question": "What is an Anonymous Inner Class?",
+      "answer": "An anonymous inner class is an inner class without a name. It is declared and instantiated in a single expression. It is highly useful when you need to create a one-off instance of a class that overrides a method of a superclass or implements an interface, without having to formally create a new separate class file. It was heavily used for event listeners before Lambdas were introduced in Java 8.",
+      "example": "interface Greeting {\n    void sayHello();\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Anonymous inner class implementing Greeting\n        Greeting g = new Greeting() {\n            @Override\n            public void sayHello() { System.out.println(\"Hello World\"); }\n        };\n        g.sayHello();\n    }\n}"
+    },
+    {
+      "question": "Why would you make a class immutable? How do you do it in Java?",
+      "answer": "Immutable classes are thread-safe (no synchronization needed), inherently cacheable, and less prone to side-effect bugs because their state cannot change after creation. To make a class immutable: 1) Declare the class as `final` so it can't be extended. 2) Make all fields `private` and `final`. 3) Do not provide setter methods. 4) If fields include mutable objects (like Lists or Dates), return deep copies in getters instead of the original references.",
+      "example": "public final class ImmutableUser {\n    private final String name;\n    private final List<String> roles;\n\n    public ImmutableUser(String name, List<String> roles) {\n        this.name = name;\n        this.roles = new ArrayList<>(roles); // Deep copy on assign\n    }\n\n    public List<String> getRoles() {\n        return new ArrayList<>(roles); // Return copy, protecting internal state\n    }\n}"
+    },
+    {
+      "question": "Explain Object Cloning and the difference between shallow and deep copy.",
+      "answer": "Object cloning is creating an exact copy of an object. The default `clone()` method in `Object` (requires implementing `Cloneable`) performs a Shallow Copy: primitive fields are copied, but reference fields copy only the memory address (both original and clone point to the same nested objects). A Deep Copy requires manually overriding `clone()` (or using serialization) to instantiate completely new copies of all nested reference objects, ensuring the cloned object is completely independent.",
+      "example": "class Employee implements Cloneable {\n    String name;\n    Department dept; // Mutable reference\n\n    @Override\n    protected Object clone() throws CloneNotSupportedException {\n        Employee cloned = (Employee) super.clone();\n        cloned.dept = new Department(this.dept.name); // Deep copy step\n        return cloned;\n    }\n}"
+    }
+  ],
+  "tags": ["oop", "encapsulation", "inheritance", "polymorphism", "abstraction"]
+}

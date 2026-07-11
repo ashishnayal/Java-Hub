@@ -1,0 +1,94 @@
+{
+  "title": "Date & Time API",
+  "slug": "datetime",
+  "category": "Java 8+",
+  "difficulty": "Beginner",
+  "description": "Master the modern java.time API introduced in Java 8 to replace the flawed legacy Date and Calendar classes.",
+  "content": "## Java Date & Time API\n\nPrior to Java 8, developers used `java.util.Date` and `java.util.Calendar`. These classes were heavily criticized for being mutable, thread-unsafe, poorly designed (months were 0-indexed), and difficult to format. Java 8 introduced the `java.time` package, a completely new API based on the popular Joda-Time library.\n\n### Key Concepts of java.time\n- **Immutable & Thread-Safe**: All core classes are immutable. Adding a day returns a new object, making them perfectly safe for concurrent environments.\n- **Clear Domain Models**: The API strictly separates human time (LocalDate, LocalTime) from machine time (Instant) and context-aware time (ZonedDateTime).\n\n### Core Classes\n- `LocalDate`: A date without a time-zone (e.g., 2026-07-11).\n- `LocalTime`: A time without a date or time-zone (e.g., 10:15:30).\n- `LocalDateTime`: A date and time, no time-zone.\n- `ZonedDateTime`: A date and time with a specific time-zone (e.g., Europe/Paris).\n- `Instant`: A point in time on the timeline (number of nanoseconds since the UNIX epoch). Used for machine timestamps.\n- `Duration`: A time-based amount of time (e.g., '34.5 seconds').\n- `Period`: A date-based amount of time (e.g., '2 years, 3 months').",
+  "codeExamples": [
+    {
+      "title": "Modern Date & Time Manipulation",
+      "language": "java",
+      "code": "import java.time.*;\nimport java.time.format.DateTimeFormatter;\nimport java.time.temporal.ChronoUnit;\n\npublic class DateTimeDemo {\n    public static void main(String[] args) {\n        // Current Date\n        LocalDate today = LocalDate.now();\n        System.out.println(\"Today: \" + today);\n\n        // Adding and Subtracting (Returns new object because it's immutable!)\n        LocalDate nextWeek = today.plus(1, ChronoUnit.WEEKS);\n        System.out.println(\"Next Week: \" + nextWeek);\n\n        // Formatting\n        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(\"dd MMM yyyy\");\n        System.out.println(\"Formatted: \" + today.format(formatter));\n\n        // Timezones\n        ZonedDateTime tokyoTime = ZonedDateTime.now(ZoneId.of(\"Asia/Tokyo\"));\n        System.out.println(\"Tokyo Time: \" + tokyoTime);\n\n        // Calculating differences (Period for dates, Duration for time)\n        LocalDate birthDate = LocalDate.of(1995, Month.MAY, 23);\n        Period age = Period.between(birthDate, today);\n        System.out.println(\"Age: \" + age.getYears() + \" years\");\n    }\n}",
+      "explanation": "This example highlights how intuitive the Java 8+ Date Time API is. It uses clear factory methods, standard ChronoUnits for manipulation, and the strictly immutable design ensures thread safety."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "Why was the java.util.Date class replaced in Java 8?",
+      "answer": "The legacy `java.util.Date` and `Calendar` classes had massive design flaws: 1) **Mutability**: `Date` objects could be modified via `setTime()`, causing subtle bugs if passed across threads or methods. 2) **Thread-Safety**: `SimpleDateFormat` was not thread-safe, forcing developers to use `ThreadLocal` or synchronization to format dates concurrently. 3) **Poor API Design**: Months were 0-indexed (January = 0), but days were 1-indexed. Years were offset from 1900. 4) **Naming**: `Date` actually contained both a date AND a time (essentially a timestamp), which was confusing. Java 8's `java.time` fixed all of this.",
+      "example": "// Legacy nightmare:\nDate d = new Date(); \nd.setYear(120); // 120 means 2020! (1900 + 120)\nint month = d.getMonth(); // 0 means January!"
+    },
+    {
+      "question": "What is the difference between LocalDate, LocalTime, and LocalDateTime?",
+      "answer": "These classes represent \"Human Time\" and do NOT store any timezone information.\n- `LocalDate` stores only a date (Year, Month, Day). e.g., your birthday.\n- `LocalTime` stores only a time (Hour, Minute, Second, Nanosecond). e.g., a daily alarm at 7:00 AM.\n- `LocalDateTime` is a combination of both. It represents a specific date and time on the calendar, but because it lacks a timezone, it doesn't represent an exact point on the universal timeline (e.g., \"New Year's Eve at midnight\" happens at different actual moments depending on where you are).",
+      "example": "LocalDate date = LocalDate.of(2026, 7, 11);\nLocalTime time = LocalTime.of(14, 30);\nLocalDateTime ldt = LocalDateTime.of(date, time);"
+    },
+    {
+      "question": "What is an Instant?",
+      "answer": "`Instant` represents a specific, instantaneous point on the universal timeline. It is \"Machine Time\". Under the hood, it stores the number of seconds and nanoseconds that have passed since the UNIX Epoch (January 1, 1970, 00:00:00 UTC). It is entirely timezone-independent (it always represents UTC). It is the standard class used for recording timestamps in databases or event logs.",
+      "example": "Instant now = Instant.now();\nSystem.out.println(now); // e.g., 2026-07-11T09:00:00Z ('Z' denotes UTC/Zulu time)"
+    },
+    {
+      "question": "How do you convert a LocalDateTime to an Instant?",
+      "answer": "Because `LocalDateTime` lacks a timezone, it cannot be directly converted to an `Instant` (a specific point on the universal timeline). You must provide the context of *where* that LocalDateTime occurred by applying a `ZoneId` or a `ZoneOffset`. This converts it into a `ZonedDateTime` or `OffsetDateTime`, which can then be seamlessly converted to an `Instant`.",
+      "example": "LocalDateTime ldt = LocalDateTime.now();\n// Cannot do ldt.toInstant();\n\n// Provide context (e.g., this time happened in New York)\nInstant instant = ldt.atZone(ZoneId.of(\"America/New_York\")).toInstant();"
+    },
+    {
+      "question": "What is the difference between Period and Duration?",
+      "answer": "Both measure an amount of time, but on different scales.\n- **`Period`** is used for date-based amounts (Years, Months, Days). It respects Daylight Saving Time and leap years when doing calculations.\n- **`Duration`** is used for time-based amounts (Hours, Minutes, Seconds, Nanoseconds). It represents an exact physical duration of time.\nFor example, adding a `Period` of 1 Day to a midnight timestamp might result in 23 or 25 hours if a DST shift occurs, whereas adding a `Duration` of 24 Hours is always exactly 24 hours.",
+      "example": "Period p = Period.of(1, 2, 0); // 1 year, 2 months\nDuration d = Duration.ofHours(5); // exactly 5 hours"
+    },
+    {
+      "question": "How do you format a date in Java 8+?",
+      "answer": "You use `DateTimeFormatter`. Unlike the legacy `SimpleDateFormat`, `DateTimeFormatter` is completely immutable and thread-safe. You can safely define a formatter as a `public static final` constant and use it across thousands of concurrent threads without any locking.",
+      "example": "public static final DateTimeFormatter FORMATTER = \n    DateTimeFormatter.ofPattern(\"yyyy-MM-dd HH:mm\");\n\n// Format: Object to String\nString text = LocalDateTime.now().format(FORMATTER);\n\n// Parse: String to Object\nLocalDateTime ldt = LocalDateTime.parse(\"2026-07-11 14:30\", FORMATTER);"
+    },
+    {
+      "question": "How do you handle timezones?",
+      "answer": "Timezones are handled using the `ZonedDateTime` class combined with `ZoneId`. `ZoneId` represents standard IANA timezone identifiers (like \"Europe/Paris\" or \"Asia/Tokyo\"). A `ZonedDateTime` is essentially a `LocalDateTime` plus a `ZoneId` and the calculated `ZoneOffset` from UTC.",
+      "example": "ZoneId tokyoZone = ZoneId.of(\"Asia/Tokyo\");\nZonedDateTime tokyoTime = ZonedDateTime.now(tokyoZone);\n\n// Convert Tokyo time to New York time\nZonedDateTime nyTime = tokyoTime.withZoneSameInstant(ZoneId.of(\"America/New_York\"));"
+    },
+    {
+      "question": "What is the difference between ZoneId and ZoneOffset?",
+      "answer": "`ZoneOffset` represents a fixed absolute difference from UTC/Greenwich (e.g., `+05:30` or `-08:00`). It does not change. `ZoneId` represents a geographical region (e.g., `America/New_York`). The crucial difference is that a `ZoneId` includes historical geopolitical rules and Daylight Saving Time (DST) transitions. Therefore, the `ZoneOffset` for a `ZoneId` can change depending on what time of year it is.",
+      "example": "ZoneOffset fixedOffset = ZoneOffset.ofHours(-5);\nZoneId region = ZoneId.of(\"America/New_York\");\n// New York uses -5 in winter, but -4 in summer (DST). \n// ZoneId handles this automatically; ZoneOffset does not."
+    },
+    {
+      "question": "How do you get the number of days between two dates?",
+      "answer": "To calculate the exact number of standard days between two `LocalDate` objects, you use `ChronoUnit.DAYS.between(date1, date2)`. Do NOT use `Period.between()`, because `Period` returns a component-based format. For example, if the dates are 1 month and 5 days apart, `Period.getDays()` will return 5, not 35.",
+      "example": "LocalDate d1 = LocalDate.of(2026, 1, 1);\nLocalDate d2 = LocalDate.of(2026, 2, 10);\n\nlong days = ChronoUnit.DAYS.between(d1, d2); // Returns 40\nint pDays = Period.between(d1, d2).getDays(); // Returns 9!"
+    },
+    {
+      "question": "What is a TemporalAdjuster?",
+      "answer": "`TemporalAdjuster` is a functional interface used to perform complex date mathematics, such as finding \"the first Tuesday of next month\" or \"the last day of the current year\". Java provides many common adjusters in the `TemporalAdjusters` utility class, and you can easily write custom ones.",
+      "example": "LocalDate today = LocalDate.now();\n// Get the upcoming Friday\nLocalDate nextFriday = today.with(TemporalAdjusters.next(DayOfWeek.FRIDAY));\n// Get the last day of the current month\nLocalDate endOfMonth = today.with(TemporalAdjusters.lastDayOfMonth());"
+    },
+    {
+      "question": "How do you convert a legacy java.util.Date to the new java.time API?",
+      "answer": "To bridge the gap between old and new code, Java 8 added a `toInstant()` method to the legacy `Date` class. You convert the `Date` to an `Instant`, and then apply a `ZoneId` (usually the system default) to turn it into a modern `ZonedDateTime` or `LocalDate`.",
+      "example": "Date legacyDate = new Date();\n\n// Convert to modern LocalDateTime\nLocalDateTime ldt = legacyDate.toInstant()\n    .atZone(ZoneId.systemDefault())\n    .toLocalDateTime();"
+    },
+    {
+      "question": "What is the best type to use for storing timestamps in a Database?",
+      "answer": "For saving absolute timestamps (e.g., when a user registered, or when a transaction occurred), you should always use `Instant`. It maps perfectly to standard SQL `TIMESTAMP` (or `TIMESTAMP WITH TIME ZONE` in PostgreSQL). Since it is always UTC, you avoid the nightmare of servers in different regions writing inconsistent local times to the database. You only convert the `Instant` to a local timezone when rendering it on the frontend for the user.",
+      "example": "class Transaction {\n    Instant createdAt; // Best practice\n    // LocalDateTime createdAt; // BAD: Ambiguous without timezone\n}"
+    },
+    {
+      "question": "Is java.time safe from Leap Seconds?",
+      "answer": "Yes. The Java Time API intentionally smooths over leap seconds. The API defines a day as exactly 86,400 seconds. If a leap second occurs (adding an 86,401st second to a day), the JVM handles it natively (usually by \"time smearing\"—slightly slowing down the clock over a period of hours) so that application logic using `Duration` or `Instant` never sees a 60th second or a negative time jump.",
+      "example": "// Duration between two instants is guaranteed to be consistent \n// and mathematically sound, avoiding leap second arithmetic crashes."
+    },
+    {
+      "question": "How do you check if a year is a leap year?",
+      "answer": "The `LocalDate` and `Year` classes provide a built-in `isLeapYear()` method. You no longer need to write modulo arithmetic (`year % 4 == 0 && year % 100 != 0`) to figure this out.",
+      "example": "boolean isLeap = LocalDate.now().isLeapYear();\nboolean is2024Leap = Year.of(2024).isLeap();"
+    },
+    {
+      "question": "What is Clock in java.time and why is it useful for Unit Testing?",
+      "answer": "The `Clock` class provides access to the current instant, date, and time using a time-zone. While you can call `LocalDate.now()`, it reads directly from the system clock, which makes testing time-dependent logic (like \"is the coupon expired?\") very difficult. Best practice is to inject a `Clock` into your services. In production, you pass `Clock.systemUTC()`. In unit tests, you pass a `Clock.fixed(...)` to freeze time, making your tests deterministic.",
+      "example": "class CouponService {\n    private final Clock clock;\n    public CouponService(Clock clock) { this.clock = clock; }\n    \n    public boolean isExpired(Instant expiry) {\n        return Instant.now(clock).isAfter(expiry); \n    }\n}\n// Test: new CouponService(Clock.fixed(someInstant, ZoneId.of(\"UTC\")));"
+    }
+  ],
+  "tags": ["date", "time", "java-8", "localdate", "instant", "timezone", "duration"]
+}

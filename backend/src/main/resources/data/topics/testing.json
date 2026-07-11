@@ -1,0 +1,94 @@
+{
+  "title": "Testing (JUnit & Mockito)",
+  "slug": "testing",
+  "category": "Testing",
+  "difficulty": "Intermediate",
+  "description": "Learn how to write robust unit and integration tests using JUnit 5, Mockito, and Spring Boot Test.",
+  "content": "## Software Testing in Java\n\nTesting is a fundamental part of the software development lifecycle. It ensures that code behaves exactly as expected and protects against regressions when refactoring.\n\n### The Testing Pyramid\n1. **Unit Tests** (Bottom): The vast majority of your tests. They test a single class or method in complete isolation. Extremely fast.\n2. **Integration Tests** (Middle): Tests how multiple units (or external systems like databases) work together. Slower.\n3. **End-to-End (E2E) Tests** (Top): Tests the entire system from the UI down to the database. Very slow and brittle.\n\n### Key Frameworks\n- **JUnit 5 (Jupiter)**: The industry-standard framework for writing tests in Java. Provides annotations like `@Test`, `@BeforeEach`, and assertions.\n- **Mockito**: A mocking framework used in Unit Tests. It allows you to create fake (mock) implementations of external dependencies so you can isolate the class you are currently testing.\n- **Spring Boot Test**: Provides annotations (like `@SpringBootTest`, `@WebMvcTest`, `@DataJpaTest`) to easily spin up parts of the Spring context for integration testing.",
+  "codeExamples": [
+    {
+      "title": "Unit Testing with JUnit 5 & Mockito",
+      "language": "java",
+      "code": "import org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.InjectMocks;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\n\nimport static org.junit.jupiter.api.Assertions.*;\nimport static org.mockito.Mockito.*;\n\n// 1. Enable Mockito\n@ExtendWith(MockitoExtension.class)\nclass OrderServiceTest {\n\n    // 2. Create a Mock (fake) of the dependency\n    @Mock\n    private PaymentGateway paymentGateway;\n\n    // 3. Inject the mock into the class we want to test\n    @InjectMocks\n    private OrderService orderService;\n\n    @Test\n    void testCheckout_Success() {\n        // 4. Arrange: Train the mock to return true when charge(100) is called\n        when(paymentGateway.charge(100)).thenReturn(true);\n\n        // 5. Act: Call the real method we are testing\n        boolean result = orderService.checkout(100);\n\n        // 6. Assert: Verify the outcome\n        assertTrue(result, \"Checkout should succeed if payment passes\");\n        \n        // Verify that the gateway was actually interacted with exactly once\n        verify(paymentGateway, times(1)).charge(100);\n    }\n\n    @Test\n    void testCheckout_Failure() {\n        // Arrange: Train mock to throw an exception\n        when(paymentGateway.charge(500)).thenThrow(new IllegalArgumentException(\"Limit exceeded\"));\n\n        // Act & Assert: Expect the exception to bubble up\n        assertThrows(IllegalArgumentException.class, () -> {\n            orderService.checkout(500);\n        });\n    }\n}",
+      "explanation": "This demonstrates a classic Unit Test. We are testing the 'OrderService'. To ensure we are only testing the logic inside OrderService, we use Mockito to mock its dependency (PaymentGateway). We train the mock to return specific values and then assert that the OrderService handles those values correctly."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between JUnit 4 and JUnit 5?",
+      "answer": "JUnit 5 was a complete rewrite. Unlike JUnit 4 which was a single monolithic JAR, JUnit 5 is composed of three sub-projects: Platform (the launch foundation), Jupiter (the new programming model), and Vintage (backward compatibility for JUnit 4). JUnit 5 heavily utilizes Java 8 features (like lambdas for `assertAll` or `assertThrows`). Many annotations changed: `@Before` became `@BeforeEach`, `@BeforeClass` became `@BeforeAll`, and `@Ignore` became `@Disabled`.",
+      "example": "// JUnit 4 exception testing (Annoying):\n@Test(expected = NullPointerException.class)\n\n// JUnit 5 exception testing (Much better, lets you assert the message too):\nException e = assertThrows(NullPointerException.class, () -> myMethod());"
+    },
+    {
+      "question": "What is Mocking and why do we use it in Unit Tests?",
+      "answer": "A Unit Test must test a single unit (class/method) in *absolute isolation*. If a `UserService` depends on a `UserRepository` which talks to a Database, testing `UserService` normally would hit the DB (making it an Integration Test). Mocking creates a fake object (a mock) of the `UserRepository`. You program this mock to return hardcoded data instantly without hitting the DB. This ensures your test is lightning fast and strictly tests the business logic inside the `UserService`, unaffected by DB network failures.",
+      "example": "// Mocking a DB call\nwhen(userRepository.findById(1L)).thenReturn(Optional.of(new User(\"Alice\")));"
+    },
+    {
+      "question": "What is the difference between @Mock and @InjectMocks?",
+      "answer": "`@Mock` creates a fake (mocked) implementation of a class or interface. `@InjectMocks` creates a real instance of the class you are trying to test, and it automatically looks at all the `@Mock` fields in your test class and injects them into the real object (usually via its constructor).",
+      "example": "@Mock UserRepository repo; // Creates a fake repo\n@InjectMocks UserService service; // Creates the REAL service, injecting the fake repo"
+    },
+    {
+      "question": "Explain the Given-When-Then (Arrange-Act-Assert) pattern.",
+      "answer": "It is the standard structural pattern for writing test cases to ensure readability and consistency.\n1. **Arrange (Given)**: Set up the test data, configure the mocks, and prepare the state.\n2. **Act (When)**: Invoke the specific method you are trying to test.\n3. **Assert (Then)**: Verify that the method returned the correct value, threw the expected exception, or interacted with the mocks correctly.",
+      "example": "// Given\nint a = 5, b = 10;\n// When\nint result = calculator.add(a, b);\n// Then\nassertEquals(15, result);"
+    },
+    {
+      "question": "How do you test that a method throws an Exception in JUnit 5?",
+      "answer": "You use the `assertThrows()` method provided by `org.junit.jupiter.api.Assertions`. You pass the expected Exception class and an Executable (usually represented as a lambda expression `() -> methodCall()`). If the lambda executes without throwing the exact exception (or a subclass), the test fails. It returns the caught exception so you can assert its message.",
+      "example": "IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {\n    service.process(-1);\n});\nassertEquals(\"Invalid ID\", ex.getMessage());"
+    },
+    {
+      "question": "What is the difference between Mockito's `when().thenReturn()` and `verify()`?",
+      "answer": "`when().thenReturn()` (stubbing) is used in the **Arrange** phase. It trains the mock on what data to return when a method is called. \n`verify()` is used in the **Assert** phase. It checks if a specific method on a mock was actually called by your code, and how many times it was called. It is used to verify side effects (like sending an email or saving to a DB).",
+      "example": "// Arrange\nwhen(repo.exists(1L)).thenReturn(true);\n\n// Assert\nverify(emailClient, times(1)).sendEmail(\"admin@test.com\");"
+    },
+    {
+      "question": "What is @SpringBootTest used for?",
+      "answer": "`@SpringBootTest` is used for deep Integration Testing. When you run a test class annotated with this, Spring Boot spins up the entire Application Context, loading all configurations, services, repositories, and even the embedded database. Because it loads the whole app, it is very slow. It should only be used when you need to test how all the layers interact together end-to-end.",
+      "example": "@SpringBootTest\nclass FullApplicationIntegrationTest { ... }"
+    },
+    {
+      "question": "What is Testcontainers?",
+      "answer": "In integration tests, you often need a real database (like PostgreSQL or Redis). Using an in-memory DB like H2 is common, but H2 doesn't perfectly emulate Postgres logic (leading to false positives). Testcontainers is a Java library that uses Docker to spin up actual, lightweight instances of real databases, message brokers, or anything else that runs in a Docker container, right before your tests run, and tears them down after. It provides production-identical testing environments.",
+      "example": "// Testcontainers spins up a real PostgreSQL container just for this test suite\n@Container\nstatic PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(\"postgres:15\");"
+    },
+    {
+      "question": "What is @WebMvcTest?",
+      "answer": "`@WebMvcTest` is a Spring Boot annotation used to test the Web Layer (Controllers) in isolation. It only instantiates the web-related beans (`@Controller`, `@ControllerAdvice`, Filters), but it does NOT instantiate your `@Service` or `@Repository` beans. This makes it much faster than `@SpringBootTest`. You use `@MockBean` to mock away the Service layer, and `MockMvc` to send fake HTTP requests to the controller.",
+      "example": "@WebMvcTest(UserController.class)\nclass UserControllerTest {\n    @Autowired MockMvc mockMvc;\n    @MockBean UserService userService; // Mock the dependency\n}"
+    },
+    {
+      "question": "What is the difference between @Mock and @MockBean?",
+      "answer": "`@Mock` belongs to Mockito and is used purely in standard Unit Tests that do not involve the Spring Context. `@MockBean` belongs to Spring Boot Test. It is used in Spring Integration tests (like `@WebMvcTest` or `@SpringBootTest`). It creates a mock, but crucially, it replaces any existing bean of the same type in the Spring ApplicationContext with this mock. If you try to use `@Mock` in a `@WebMvcTest`, Spring won't know about it and dependency injection will fail.",
+      "example": "// Standard Unit Test (No Spring)\n@Mock UserService service; \n\n// Spring Context Test\n@MockBean UserService service;"
+    },
+    {
+      "question": "What is @DataJpaTest?",
+      "answer": "`@DataJpaTest` is used for testing the Persistence Layer (Repositories). It automatically configures an in-memory database (if available), configures Hibernate, and scans for `@Entity` and Spring Data `@Repository` interfaces. Crucially, every test method runs inside a transaction and rolls back at the end of the test, ensuring the database is completely clean for the next test method.",
+      "example": "@DataJpaTest\nclass UserRepositoryTest {\n    @Autowired UserRepository repo;\n    // Tests DB queries without loading the @RestController or @Service layers\n}"
+    },
+    {
+      "question": "How do you test void methods using Mockito?",
+      "answer": "Since `void` methods return nothing, you cannot use `when(mock.voidMethod()).thenReturn(...)`. Instead, you use `verify()` to ensure the void method was actually invoked. If you need the mock's void method to throw an exception when called, you must use Mockito's alternative syntax: `doThrow(Exception.class).when(mock).voidMethod();`.",
+      "example": "// Mocking a void method to throw an exception\ndoThrow(new RuntimeException(\"Failed\")).when(emailService).send(anyString());"
+    },
+    {
+      "question": "What is ArgumentCaptor in Mockito?",
+      "answer": "`ArgumentCaptor` allows you to capture an argument that was passed to a mock object so that you can inspect and run assertions on it. This is incredibly useful when the object being passed to the mock is created *inside* the method you are testing, meaning you don't have a reference to it in your test setup.",
+      "example": "// Inside code: repo.save(new User(\"Alice\"));\n\n// In test:\nArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);\nverify(repo).save(captor.capture());\nassertEquals(\"Alice\", captor.getValue().getName());"
+    },
+    {
+      "question": "What does `@ParameterizedTest` do in JUnit 5?",
+      "answer": "`@ParameterizedTest` allows you to execute the exact same test method multiple times with different inputs. It reduces code duplication drastically. You combine it with sources like `@ValueSource` (arrays of primitives/strings), `@CsvSource` (comma-separated values), or `@MethodSource` (a method returning a stream of complex arguments).",
+      "example": "@ParameterizedTest\n@ValueSource(strings = {\"radar\", \"racecar\", \"madam\"})\nvoid testIsPalindrome(String word) {\n    assertTrue(StringUtils.isPalindrome(word));\n}"
+    },
+    {
+      "question": "Why is static state dangerous for Unit Tests?",
+      "answer": "Unit tests must be independent and repeatable. They can be executed in any order, and often run in parallel on build servers. If a test modifies a global `static` variable or a Singleton, that modification \"leaks\" into other tests. Test A might pass if it runs first, but fail if Test B runs first and corrupts the static state. This is called \"Test Pollution\". Code heavily reliant on static methods is notoriously difficult to mock and test safely.",
+      "example": "// Bad: Modifying global state makes tests unpredictable\nGlobalConfig.setApiKey(\"TEST_KEY\");"
+    }
+  ],
+  "tags": ["testing", "junit", "mockito", "spring-test", "unit-test", "integration-test"]
+}

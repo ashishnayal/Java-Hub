@@ -29,6 +29,12 @@ export interface JavaVersion {
   codeExamples: CodeExample[];
 }
 
+export interface InterviewQuestion {
+  question: string;
+  answer: string;
+  example: string;
+}
+
 export interface Topic {
   id: string;
   title: string;
@@ -37,7 +43,7 @@ export interface Topic {
   description: string;
   content: string;
   codeExamples: CodeExample[];
-  interviewQuestions: string[];
+  interviewQuestions: (string | InterviewQuestion)[];
   difficulty: string;
   tags: string[];
 }

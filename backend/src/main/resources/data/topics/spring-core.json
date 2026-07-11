@@ -1,0 +1,119 @@
+{
+  "title": "Spring Core & Inversion of Control",
+  "slug": "spring-core",
+  "category": "Frameworks",
+  "difficulty": "Intermediate",
+  "description": "Understand the heart of the Spring Framework: Inversion of Control (IoC), Dependency Injection (DI), Bean Lifecycles, and ApplicationContext.",
+  "content": "## Spring Core\n\nThe Spring Framework is an open-source application framework that provides infrastructure support for developing robust Java applications. At its absolute core is the **Inversion of Control (IoC) Container**.\n\n### Core Concepts\n- **Inversion of Control (IoC)**: A design principle where the control of object creation and lifecycle is transferred from the application code to a framework/container. Instead of calling `new`, you ask the container for an object.\n- **Dependency Injection (DI)**: The primary implementation of IoC in Spring. When a bean is created, the Spring container automatically \"injects\" all the dependencies (other beans) that the bean needs to function.\n- **Spring Bean**: Any Java object that is instantiated, assembled, and managed by the Spring IoC container.\n- **ApplicationContext**: The advanced interface for the IoC container. It loads configuration, wires beans together, and manages their entire lifecycle from initialization to destruction.\n\n### Configuration Methods\n1. **XML-based**: The legacy approach (e.g., `applicationContext.xml`).\n2. **Annotation-based**: Using `@Component`, `@Autowired`, `@Service` scattered across classes.\n3. **Java Config**: The modern approach using `@Configuration` classes and `@Bean` methods, offering compile-time type safety.",
+  "codeExamples": [
+    {
+      "title": "Dependency Injection in Action",
+      "language": "java",
+      "code": "import org.springframework.stereotype.*;\nimport org.springframework.beans.factory.annotation.*;\nimport org.springframework.context.annotation.*;\nimport org.springframework.context.ApplicationContext;\n\n// 1. Define Dependencies\n@Repository\nclass UserRepository {\n    public String getUser() { return \"Alice\"; }\n}\n\n@Service\nclass UserService {\n    private final UserRepository repository;\n\n    // 2. Constructor Injection (Recommended!)\n    @Autowired\n    public UserService(UserRepository repository) {\n        this.repository = repository;\n    }\n\n    public void printUser() {\n        System.out.println(\"User: \" + repository.getUser());\n    }\n}\n\n// 3. Configuration & Bootstrapping\n@Configuration\n@ComponentScan(basePackages = \"com.example\")\npublic class AppConfig {}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Start the IoC Container\n        ApplicationContext context = \n            new AnnotationConfigApplicationContext(AppConfig.class);\n        \n        // Get the fully wired bean\n        UserService service = context.getBean(UserService.class);\n        service.printUser(); // Outputs: User: Alice\n    }\n}",
+      "explanation": "This demonstrates the modern Spring approach. The UserService does not instantiate UserRepository (no 'new' keyword). The Spring ApplicationContext detects the @Service and @Repository annotations, creates singletons of both, and injects the repository into the service's constructor automatically."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is Inversion of Control (IoC)?",
+      "answer": "In traditional programming, your custom code dictates the flow of execution and manually instantiates dependencies using the `new` keyword. Inversion of Control reverses this: a generic framework (the IoC Container) controls the flow of execution and the lifecycle of objects. Your custom code is simply \"plugged into\" the framework. This drastically reduces tight coupling between classes.",
+      "example": "// Traditional (Tightly Coupled)\nclass Car { Engine e = new V8Engine(); }\n\n// IoC (Loosely Coupled)\nclass Car { \n    Engine e; \n    Car(Engine e) { this.e = e; } // Spring provides the engine\n}"
+    },
+    {
+      "question": "What is Dependency Injection (DI) and how is it related to IoC?",
+      "answer": "Dependency Injection is a specific design pattern used to implement Inversion of Control. When an object relies on other objects to function (dependencies), DI ensures those dependencies are provided (injected) to the object at runtime, rather than the object creating them itself. The Spring IoC Container achieves DI via Constructors, Setters, or Field injection.",
+      "example": "class PaymentProcessor {\n    // The Dependency\n    private final PaymentGateway gateway; \n    \n    // The Injection (via Constructor)\n    public PaymentProcessor(PaymentGateway gateway) {\n        this.gateway = gateway;\n    }\n}"
+    },
+    {
+      "question": "What are the different types of Dependency Injection in Spring? Which is recommended?",
+      "answer": "1) **Constructor Injection**: Dependencies are passed through the class constructor. **(Recommended)**. 2) **Setter Injection**: Dependencies are passed via public setter methods after instantiation. 3) **Field Injection**: Dependencies are injected directly into private fields using reflection (via `@Autowired`). Field injection is highly discouraged because it makes the class tightly coupled to Spring and impossible to instantiate cleanly in a unit test without reflection. Constructor injection is recommended because it allows fields to be `final`, ensuring the bean is fully initialized in a valid state.",
+      "example": "// RECOMMENDED: Constructor Injection\n@Service\nclass OrderService {\n    private final InvoiceService invoiceService; // Can be final!\n    public OrderService(InvoiceService inv) { this.invoiceService = inv; }\n}"
+    },
+    {
+      "question": "What is a Spring Bean?",
+      "answer": "A Spring Bean is simply a Java object that is instantiated, assembled, and managed by the Spring IoC container. Beans are the backbone of a Spring application. The container creates them according to the configuration metadata (XML, Annotations, or Java Config) provided by the developer.",
+      "example": "@Component // Tells Spring to create a Bean of this class\npublic class EmailSender { }"
+    },
+    {
+      "question": "What are the different Bean Scopes in Spring?",
+      "answer": "1) **Singleton** (Default): Only one shared instance of the bean is created per Spring IoC container. 2) **Prototype**: A brand new instance is created every time the bean is requested. \nWeb-aware scopes (only valid in Spring Web apps): 3) **Request**: One instance per HTTP request. 4) **Session**: One instance per HTTP session. 5) **Application**: One instance per ServletContext.",
+      "example": "@Component\n@Scope(\"prototype\") // Creates a new instance every time it's injected\npublic class UserSessionData { }"
+    },
+    {
+      "question": "What happens if you inject a Prototype bean into a Singleton bean?",
+      "answer": "This is a common \"gotcha\". Since the Singleton bean is only instantiated *once* at startup, its dependencies are also injected only *once*. Therefore, even though the dependency is marked as Prototype, the Singleton will hold the exact same instance of that Prototype forever. To fix this, you must use Method Injection (using `@Lookup`) or inject the `ApplicationContext` (or an `ObjectFactory`) to request a fresh Prototype bean manually every time a method is called.",
+      "example": "@Service\nclass SingletonService {\n    @Lookup // Spring intercepts this method to return a fresh prototype\n    public PrototypeBean getPrototype() { return null; }\n}"
+    },
+    {
+      "question": "Explain the Spring Bean Lifecycle.",
+      "answer": "1. **Instantiation**: Spring creates the object. 2. **Populate Properties**: Spring injects dependencies. 3. **BeanNameAware / BeanFactoryAware**: Spring passes contextual interfaces. 4. **Pre-Initialization**: `BeanPostProcessor.postProcessBeforeInitialization()` runs. 5. **Initialization**: Custom init methods run (e.g., methods annotated with `@PostConstruct` or `InitializingBean.afterPropertiesSet()`). 6. **Post-Initialization**: `BeanPostProcessor.postProcessAfterInitialization()` runs (often where AOP proxies are generated). 7. **Ready**: Bean is ready for use. 8. **Destruction**: On shutdown, methods annotated with `@PreDestroy` or `DisposableBean.destroy()` are called.",
+      "example": "@Service\nclass CacheManager {\n    @PostConstruct\n    public void loadCache() { /* Runs after DI is completely finished */ }\n}"
+    },
+    {
+      "question": "What is the ApplicationContext?",
+      "answer": "`ApplicationContext` is the central interface of the Spring IoC container. It extends `BeanFactory`. While `BeanFactory` provides basic DI and lazy loading, `ApplicationContext` provides advanced enterprise features: Eager instantiation of singletons at startup, Event publishing/listening, Internationalization (i18n), and seamless integration with Spring AOP. In modern Spring, you almost exclusively use `ApplicationContext`.",
+      "example": "ApplicationContext ctx = new AnnotationConfigApplicationContext(AppConfig.class);\nMyService service = ctx.getBean(MyService.class);"
+    },
+    {
+      "question": "What is the difference between @Component, @Service, @Repository, and @Controller?",
+      "answer": "`@Component` is the generic stereotype annotation for any Spring-managed component. The others are specializations of `@Component` that provide additional semantics. `@Service` indicates business logic. `@Controller` indicates a presentation layer component (Spring MVC handles it specifically for web requests). `@Repository` indicates a data access layer component; crucially, Spring catches persistence exceptions thrown in `@Repository` beans and automatically translates them into Spring's unified `DataAccessException` hierarchy.",
+      "example": "@Repository // Not just a Component, but also enables Exception Translation\npublic class UserDao {}"
+    },
+    {
+      "question": "How does Spring Boot differ from the Spring Framework?",
+      "answer": "Spring Framework requires significant manual configuration (XML or complex Java Config) to wire beans, set up a web server, and manage dependency versions. **Spring Boot** is an extension built *on top* of the Spring Framework. It provides: 1) **Auto-configuration**: It automatically configures beans based on the JARs present in the classpath. 2) **Starter POMs**: Opinionated dependency descriptors that bundle related libraries. 3) **Embedded Servers**: Tomcat/Jetty is embedded, meaning you run the app via `java -jar` rather than deploying a WAR to an external server.",
+      "example": "// Spring Boot automatically configures a DataSource and JPA EntityManager \n// simply because it sees H2 and Hibernate in the classpath!"
+    },
+    {
+      "question": "What does @SpringBootApplication do?",
+      "answer": "It is a convenience annotation that combines three powerful annotations: 1) `@Configuration`: Tags the class as a source of bean definitions. 2) `@EnableAutoConfiguration`: Tells Spring Boot to start adding beans based on classpath settings, other beans, and various property settings. 3) `@ComponentScan`: Tells Spring to look for other components, configurations, and services in the current package and its sub-packages, allowing it to find your custom `@Controller` and `@Service` classes.",
+      "example": "@SpringBootApplication // Equivalent to the 3 annotations above\npublic class MyApplication {\n    public static void main(String[] args) {\n        SpringApplication.run(MyApplication.class, args);\n    }\n}"
+    },
+    {
+      "question": "What is @Qualifier and when do you use it?",
+      "answer": "When Spring attempts to autowire a dependency by type, and it finds *multiple* beans of that same type (e.g., two classes implementing a `PaymentStrategy` interface), it throws a `NoUniqueBeanDefinitionException`. You use the `@Qualifier` annotation alongside `@Autowired` to specify exactly which bean name you want injected, resolving the ambiguity.",
+      "example": "@Autowired\n@Qualifier(\"paypalProcessor\") // Resolves ambiguity\nprivate PaymentProcessor processor;"
+    },
+    {
+      "question": "What is the difference between @Autowired and @Resource?",
+      "answer": "`@Autowired` is a Spring-specific annotation that resolves dependencies primarily by **Type**. If multiple types exist, it falls back to matching by name. `@Resource` is a standard Java EE (Jakarta EE) annotation (JSR-250) that resolves dependencies primarily by **Name**. If no name is specified, it falls back to matching by type. Spring supports both.",
+      "example": "// Resolves by Type first\n@Autowired private Engine v8Engine;\n\n// Resolves by Bean Name first\n@Resource(name = \"v8Engine\") private Engine engine;"
+    },
+    {
+      "question": "What is Spring AOP (Aspect-Oriented Programming)?",
+      "answer": "AOP allows you to separate cross-cutting concerns (logic that scatters across many classes, like Logging, Security, or Transactions) from your core business logic. You define an 'Aspect' containing the logic (an 'Advice'), and define rules ('Pointcuts') for where that logic should be injected (e.g., \"run this before every method in the Service package\"). Spring implements AOP by generating dynamic Proxy classes around your actual beans at runtime.",
+      "example": "@Aspect\n@Component\nclass LoggingAspect {\n    @Before(\"execution(* com.example.service.*.*(..))\")\n    public void logBefore() { System.out.println(\"Method called!\"); }\n}"
+    },
+    {
+      "question": "How does @Transactional work under the hood?",
+      "answer": "`@Transactional` is powered by Spring AOP. When you annotate a method with it, Spring does not inject the bean directly into the caller. Instead, it creates a Dynamic Proxy object that wraps your bean. When the caller invokes the method on the proxy, the proxy: 1) Opens a database transaction. 2) Invokes your actual method. 3) If no exception (or a RuntimeException) is thrown, it Commits the transaction. 4) If a RuntimeException is thrown, it gracefully Rolls Back the transaction.",
+      "example": "@Service\nclass TransferService {\n    @Transactional // AOP Proxy handles begin/commit/rollback\n    public void transfer(String from, String to, int amount) { /* ... */ }\n}"
+    },
+    {
+      "question": "What happens if you call an @Transactional method from another method within the SAME class?",
+      "answer": "The transaction will NOT be started! Because Spring AOP relies on Proxies, the proxy interception only happens when an *external* caller invokes the method. If Method A calls Method B on `this` (the same instance), the call bypasses the proxy entirely and goes directly to the real object. Therefore, the AOP logic (starting the transaction) is completely ignored.",
+      "example": "public class MyService {\n    public void doWork() { \n        saveData(); // Bypasses Proxy! No transaction is started.\n    }\n    @Transactional\n    public void saveData() { /* ... */ }\n}"
+    },
+    {
+      "question": "What is the difference between @Configuration and @Component?",
+      "answer": "While both register a bean in the container, `@Configuration` classes are treated specially. If a `@Configuration` class has a method annotated with `@Bean`, Spring intercepts calls to that method using CGLIB proxies to ensure it returns the *same* singleton instance every time (respecting the singleton scope). If you use `@Bean` inside a regular `@Component`, calling the method twice will execute the method twice, creating two completely different objects.",
+      "example": "@Configuration\nclass AppConfig {\n    @Bean public Engine engine() { return new Engine(); }\n    @Bean public Car car() {\n        // Spring intercepts engine() to ensure the Singleton is returned\n        return new Car(engine()); \n    }\n}"
+    },
+    {
+      "question": "Explain Spring Profiles.",
+      "answer": "Spring Profiles provide a way to segregate parts of your application configuration and make them available only in certain environments (e.g., `dev`, `test`, `prod`). You can annotate beans or `@Configuration` classes with `@Profile(\"dev\")`. That bean will only be created if the `dev` profile is active. You activate profiles via application properties (`spring.profiles.active=dev`) or environment variables.",
+      "example": "@Component\n@Profile(\"dev\")\nclass DevDatabaseConfig { /* Uses H2 in-memory DB */ }\n\n@Component\n@Profile(\"prod\")\nclass ProdDatabaseConfig { /* Uses PostgreSQL DB */ }"
+    },
+    {
+      "question": "What is the application.properties or application.yml file?",
+      "answer": "In Spring Boot, this is the central configuration file. It is used to define framework settings (server port, database credentials, JPA dialect) as well as custom business properties. Spring Boot automatically loads this file and allows you to inject these values directly into your beans using the `@Value` annotation or via `@ConfigurationProperties` binding.",
+      "example": "// In application.yml: app.retry.max-attempts=5\n\n@Value(\"${app.retry.max-attempts}\")\nprivate int maxAttempts;"
+    },
+    {
+      "question": "What are Spring Boot Actuators?",
+      "answer": "Spring Boot Actuator brings production-ready features to your application without writing any code. By including the dependency, it automatically exposes REST endpoints (like `/actuator/health`, `/actuator/metrics`, `/actuator/env`) that allow you to monitor application health, view environment variables, dump thread states, and collect metrics for monitoring tools like Prometheus and Grafana.",
+      "example": "GET http://localhost:8080/actuator/health\n// Response: {\"status\": \"UP\"}"
+    }
+  ],
+  "tags": ["spring", "ioc", "di", "beans", "spring-boot", "aop"]
+}

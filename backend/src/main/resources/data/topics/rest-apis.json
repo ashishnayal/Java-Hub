@@ -1,0 +1,119 @@
+{
+  "title": "REST APIs & Spring Web",
+  "slug": "rest-apis",
+  "category": "Frameworks",
+  "difficulty": "Intermediate",
+  "description": "Learn the principles of RESTful architecture and how to build powerful HTTP APIs using Spring Boot's Web module.",
+  "content": "## REST APIs & Spring Web\n\nRepresentational State Transfer (REST) is an architectural style for designing networked applications. It relies on a stateless, client-server, cacheable communications protocol (almost always HTTP).\n\n### REST Principles\n1. **Uniform Interface**: Resources are identified by standard URIs (e.g., `/api/users/123`). Actions are determined by standard HTTP Methods.\n2. **Stateless**: Every request from the client to the server must contain all the information needed to understand the request. The server does not store client context (session state) between requests.\n3. **Client-Server**: The UI (client) is completely separated from the data storage (server).\n\n### HTTP Methods\n- **GET**: Retrieve a resource (Safe, Idempotent).\n- **POST**: Create a new resource (Not safe, Not idempotent).\n- **PUT**: Fully update an existing resource or create if not exists (Not safe, Idempotent).\n- **PATCH**: Partially update an existing resource (Not safe, Not idempotent).\n- **DELETE**: Delete a resource (Not safe, Idempotent).",
+  "codeExamples": [
+    {
+      "title": "Spring Boot REST Controller",
+      "language": "java",
+      "code": "import org.springframework.web.bind.annotation.*;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.http.HttpStatus;\nimport java.util.List;\n\n// 1. @RestController combines @Controller and @ResponseBody\n// It ensures returned objects are automatically serialized to JSON.\n@RestController\n@RequestMapping(\"/api/users\")\npublic class UserController {\n\n    private final UserService service;\n    public UserController(UserService service) { this.service = service; }\n\n    // GET /api/users\n    @GetMapping\n    public List<User> getAllUsers() {\n        return service.findAll();\n    }\n\n    // GET /api/users/123 (Path Variable)\n    @GetMapping(\"/{id}\")\n    public ResponseEntity<User> getUserById(@PathVariable Long id) {\n        User user = service.findById(id);\n        if (user == null) {\n            return ResponseEntity.notFound().build(); // 404\n        }\n        return ResponseEntity.ok(user); // 200\n    }\n\n    // POST /api/users (Request Body deserialized from JSON)\n    @PostMapping\n    public ResponseEntity<User> createUser(@RequestBody User newUser) {\n        User saved = service.save(newUser);\n        return ResponseEntity.status(HttpStatus.CREATED).body(saved); // 201\n    }\n}",
+      "explanation": "This demonstrates a standard Spring Web REST controller. It handles URI mapping via @RequestMapping, extracts data using @PathVariable and @RequestBody, and returns standardized HTTP status codes using the ResponseEntity wrapper."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is REST?",
+      "answer": "REST (Representational State Transfer) is an architectural style for designing distributed web services. It treats data and functionality as \"Resources\", accessed via standard URIs. It relies on standard HTTP methods (GET, POST, PUT, DELETE) to define actions, and standard HTTP status codes (200, 404, 500) to define outcomes. It enforces statelessness, meaning the server does not \"remember\" previous requests from the same client.",
+      "example": "// Good REST URI:\n// GET /api/products/42 (Fetches product 42)\n// DELETE /api/products/42 (Deletes product 42)\n\n// Bad REST URI (RPC style):\n// POST /api/deleteProduct?id=42"
+    },
+    {
+      "question": "What does Stateless mean in REST?",
+      "answer": "Statelessness means that every HTTP request happens in complete isolation. When the client sends a request, it must include *all* necessary context (like authentication tokens or pagination offsets) for the server to fulfill it. The server does not keep a `HttpSession` open in memory to remember who the user is between requests. This makes REST APIs incredibly scalable because any server in a load-balanced cluster can handle any request.",
+      "example": "// Stateful (Server remembers):\n// Request 1: POST /login (Server creates Session ID 123 in memory)\n// Request 2: GET /dashboard (Uses cookie Session ID 123)\n\n// Stateless (REST with JWT):\n// Request 1: POST /login (Server returns JWT token, saves nothing)\n// Request 2: GET /dashboard (Client sends JWT token in header)"
+    },
+    {
+      "question": "What is the difference between @Controller and @RestController?",
+      "answer": "`@Controller` is a legacy annotation used in Spring MVC for returning HTML views (like Thymeleaf or JSP templates). The method returns a String representing the view name. `@RestController` is a modern convenience annotation introduced in Spring 4. It combines `@Controller` and `@ResponseBody`. It tells Spring that every method in the class should serialize its return object directly into the HTTP response body (usually as JSON), bypassing the view resolver entirely.",
+      "example": "@RestController // Same as @Controller + @ResponseBody on every method\npublic class ApiController { ... }"
+    },
+    {
+      "question": "What is the difference between PUT and PATCH?",
+      "answer": "`PUT` is used for a complete replacement of a resource. If you send a `PUT` request, you must send the entire object payload. If fields are omitted, they should be set to null. It is Idempotent. `PATCH` is used for a partial update. You only send the fields you want to change. It is not strictly guaranteed to be Idempotent.",
+      "example": "// Original: {name: \"Alice\", age: 30}\n\n// PUT {age: 31} -> Result: {name: null, age: 31} (Replaced)\n// PATCH {age: 31} -> Result: {name: \"Alice\", age: 31} (Updated)"
+    },
+    {
+      "question": "What does Idempotent mean in HTTP?",
+      "answer": "An HTTP method is Idempotent if making the exact same request multiple times has the same effect on the server's state as making it a single time. \n- `GET` is idempotent (reading data doesn't change it).\n- `PUT` is idempotent (setting `age=30` multiple times still results in 30).\n- `DELETE` is idempotent (deleting user 5 multiple times leaves user 5 deleted).\n- `POST` is NOT idempotent (clicking \"Checkout\" twice creates two orders).",
+      "example": "// Client network drops, so it retries a DELETE request 3 times.\n// Because DELETE is idempotent, this is safe and causes no side effects."
+    },
+    {
+      "question": "What is ResponseEntity?",
+      "answer": "`ResponseEntity` is an extension of `HttpEntity` provided by Spring. It represents the entire HTTP response: the status code, the headers, and the body. While you can just return an object (like `User`) and let Spring default to a 200 OK status, `ResponseEntity` gives you full control. You can use it to return a 404 Not Found, add a custom `Location` header after a 201 Created, or set cache control headers.",
+      "example": "if (user == null) {\n    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();\n}\nreturn ResponseEntity.ok(user);"
+    },
+    {
+      "question": "What is the difference between @PathVariable and @RequestParam?",
+      "answer": "Both extract data from the URL, but for different purposes. \n- `@PathVariable` extracts values from the URI path itself (e.g., `/users/123`). It is used to identify a specific resource.\n- `@RequestParam` extracts values from the query string (e.g., `/users?role=admin&sort=asc`). It is used for filtering, sorting, or providing optional parameters.",
+      "example": "// GET /users/42?details=true\n@GetMapping(\"/users/{id}\")\npublic User getUser(@PathVariable Long id, @RequestParam boolean details) {}"
+    },
+    {
+      "question": "How does Spring Boot convert Java objects to JSON?",
+      "answer": "Spring Boot includes the **Jackson** library by default. When a `@RestController` returns a Java object, Spring's `HttpMessageConverter` pipeline kicks in. It sees that the client accepts JSON (via the `Accept` header), delegates the object to Jackson's `ObjectMapper`, serializes it into a JSON string, and writes it to the HTTP response body.",
+      "example": "class User { public String name = \"Bob\"; }\n// Controller returns new User()\n// Jackson converts it to: { \"name\": \"Bob\" }"
+    },
+    {
+      "question": "How do you handle global exceptions in a Spring REST API?",
+      "answer": "You use the `@ControllerAdvice` (or `@RestControllerAdvice`) annotation on a class. This class acts as a global interceptor for exceptions thrown by any controller. Inside it, you define methods annotated with `@ExceptionHandler(SomeException.class)`. When that exception is thrown anywhere, Spring routes it to your method, allowing you to return a standardized error JSON payload and correct HTTP status code.",
+      "example": "@RestControllerAdvice\nclass GlobalExceptionHandler {\n    @ExceptionHandler(UserNotFoundException.class)\n    @ResponseStatus(HttpStatus.NOT_FOUND)\n    public ErrorDto handleNotFound(Exception e) {\n        return new ErrorDto(e.getMessage());\n    }\n}"
+    },
+    {
+      "question": "What is Content Negotiation?",
+      "answer": "Content Negotiation is the mechanism where the client and server agree on the format of the data being exchanged. The client sends an `Accept` header (e.g., `Accept: application/json` or `application/xml`). Spring intercepts this and chooses the appropriate `HttpMessageConverter` to serialize the response into the requested format (if supported). Similarly, the `Content-Type` header tells the server what format the incoming request body is in.",
+      "example": "GET /api/users/1\nAccept: application/xml\n// Spring uses the XML converter instead of Jackson JSON to return XML."
+    },
+    {
+      "question": "What is CORS and how do you configure it in Spring?",
+      "answer": "CORS (Cross-Origin Resource Sharing) is a browser security feature that prevents a web page from making AJAX requests to a different domain (origin) than the one that served the web page. If your frontend is on `localhost:3000` and backend is on `localhost:8080`, requests will be blocked. In Spring, you can enable CORS globally by implementing `WebMvcConfigurer` and overriding `addCorsMappings`, or locally by adding the `@CrossOrigin` annotation to a controller.",
+      "example": "@CrossOrigin(origins = \"http://localhost:3000\")\n@RestController\npublic class ApiController { ... }"
+    },
+    {
+      "question": "How do you validate request payloads?",
+      "answer": "You use the Java Bean Validation API (Hibernate Validator). You add constraint annotations to your DTO class fields (like `@NotNull`, `@Size`, `@Email`). Then, in the controller method, you prepend the `@Valid` annotation to the `@RequestBody` parameter. If the incoming JSON violates the constraints, Spring immediately throws a `MethodArgumentNotValidException` (returning a 400 Bad Request) before your controller logic even executes.",
+      "example": "class UserDto {\n    @NotBlank(message = \"Name is required\")\n    String name;\n}\n\n@PostMapping\npublic void create(@Valid @RequestBody UserDto dto) { ... }"
+    },
+    {
+      "question": "What is Richardson Maturity Model?",
+      "answer": "It is a model that grades APIs on how strictly they adhere to REST principles.\n- **Level 0**: The Swamp of POX. Uses HTTP purely as a transport mechanism (like SOAP). One URI, one method (POST).\n- **Level 1**: Resources. Introduces distinct URIs for different resources (e.g., `/users`, `/orders`), but still only uses POST.\n- **Level 2**: HTTP Verbs. Correctly uses GET, POST, PUT, DELETE and HTTP status codes.\n- **Level 3**: HATEOAS (Hypermedia As The Engine Of Application State). The API includes hypermedia links in responses, allowing the client to navigate the API dynamically without hardcoding URIs.",
+      "example": "// Level 3 Response snippet (HATEOAS):\n\"links\": [ { \"rel\": \"self\", \"href\": \"/api/users/1\" }, { \"rel\": \"delete\", \"href\": \"/api/users/1\" } ]"
+    },
+    {
+      "question": "What is the N+1 problem in REST APIs?",
+      "answer": "While N+1 is famous in ORM/Database contexts, it also exists in REST. If a client fetches a list of 100 users (1 HTTP request), and then the UI needs the avatar image for each user, it might make 100 separate HTTP requests to `/api/users/{id}/avatar` (N requests). This causes massive network latency and server strain. The solution is to design aggregate endpoints, include the data in the initial payload, or implement GraphQL.",
+      "example": "// Bad: 101 HTTP requests\n// Good: 1 HTTP request returning [{user, avatarUrl}, ...]"
+    },
+    {
+      "question": "How do you handle API Versioning?",
+      "answer": "There are three main strategies to version an API when introducing breaking changes:\n1. **URI Versioning** (Most common): `/api/v1/users` vs `/api/v2/users`.\n2. **Header Versioning**: Client sends a custom header `X-API-Version: 2`.\n3. **Content Negotiation (Media Type)**: Client sends `Accept: application/vnd.mycompany.v2+json`.",
+      "example": "@GetMapping(\"/api/v1/users\")\npublic Object getUsersV1() { ... }\n\n@GetMapping(\"/api/v2/users\")\npublic Object getUsersV2() { ... }"
+    },
+    {
+      "question": "What is the purpose of a DTO (Data Transfer Object)?",
+      "answer": "A DTO is a simple POJO used to transfer data between the client and server. You should NEVER return your internal JPA `@Entity` classes directly from a REST controller. Doing so exposes your internal database schema, risks infinite recursion issues (with bidirectional JPA relationships), and bloats the payload with unneeded fields (like passwords or created_at timestamps). DTOs provide a secure, tailored contract for the API.",
+      "example": "// Entity has: id, email, passwordHash, role, createdAt\n// DTO only has: email, role"
+    },
+    {
+      "question": "What is a Filter in Spring Web?",
+      "answer": "A Filter is part of the standard Java Servlet specification (not specific to Spring). It sits in front of the `DispatcherServlet` and intercepts raw HTTP requests before they reach Spring, and raw HTTP responses before they leave. Filters are ideal for low-level tasks like logging, CORS configuration, and security (Spring Security is implemented as a massive chain of Filters).",
+      "example": "public class LoggingFilter implements Filter {\n    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) {\n        System.out.println(\"Request came in!\");\n        chain.doFilter(req, res); // Pass down the chain\n    }\n}"
+    },
+    {
+      "question": "What is an Interceptor in Spring Web?",
+      "answer": "An Interceptor (`HandlerInterceptor`) is specific to Spring MVC. It sits between the `DispatcherServlet` and your `@RestController`. Because it is inside the Spring context, it has access to the actual handler (the controller method) that will process the request. It is ideal for application-level concerns, like verifying authorization for a specific controller method or adding attributes to a model.",
+      "example": "public class AuthInterceptor implements HandlerInterceptor {\n    public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object handler) {\n        // Check token. Return true to proceed, false to block.\n    }\n}"
+    },
+    {
+      "question": "How do you implement file uploads in Spring Boot?",
+      "answer": "You use the `MultipartFile` interface provided by Spring. In your controller, you accept this as a `@RequestParam`. Spring Boot automatically parses the `multipart/form-data` request, saves the file to a temporary location on disk, and passes the `MultipartFile` object to your method so you can process it or save it permanently.",
+      "example": "@PostMapping(\"/upload\")\npublic ResponseEntity<String> upload(@RequestParam(\"file\") MultipartFile file) {\n    if (file.isEmpty()) return ResponseEntity.badRequest().build();\n    // file.transferTo(new File(\"dest.jpg\"));\n    return ResponseEntity.ok(\"Uploaded\");\n}"
+    },
+    {
+      "question": "Why is it important to use standard HTTP Status Codes?",
+      "answer": "Standard HTTP status codes are critical because intermediaries (like browsers, proxies, CDNs, and load balancers) rely on them to function. If you return an error message but send a `200 OK` status code, a CDN might cache that error page, or a load balancer might think the application is perfectly healthy. It also ruins the DX (Developer Experience) for clients consuming the API who rely on the status code to branch their logic.",
+      "example": "// 200 OK, 201 Created, 204 No Content\n// 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found\n// 500 Internal Server Error, 502 Bad Gateway"
+    }
+  ],
+  "tags": ["rest", "api", "spring-web", "http", "controller", "json"]
+}

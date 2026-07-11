@@ -157,7 +157,7 @@ export default function TopicDetailPage() {
                     <div className="interview-question" onClick={() => toggleQuestion(i)}>
                       <span className="interview-q-text">
                         <span className="interview-q-number">Q{i + 1}</span>
-                        {q}
+                        {typeof q === 'string' ? q : q.question}
                       </span>
                       <span className={`interview-toggle ${openQuestions.has(i) ? "open" : ""}`}>
                         ▼
@@ -165,10 +165,21 @@ export default function TopicDetailPage() {
                     </div>
                     {openQuestions.has(i) && (
                       <div className="interview-answer">
-                        This is a common interview question about {topic.title.toLowerCase()}.
-                        Refer to the code examples and explanations above for a comprehensive answer.
-                        Understanding the underlying concepts and being able to explain them with
-                        practical examples will make your answer stand out.
+                        {typeof q === 'string' ? (
+                          <>
+                            This is a common interview question about {topic.title.toLowerCase()}.
+                            Refer to the code examples and explanations above for a comprehensive answer.
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ marginBottom: "1rem" }}>{q.answer}</div>
+                            {q.example && (
+                              <div style={{ backgroundColor: "#1e1e1e", color: "#d4d4d4", padding: "1rem", borderRadius: "8px", fontFamily: "monospace", overflowX: "auto", whiteSpace: "pre-wrap" }}>
+                                <pre style={{ margin: 0, fontFamily: "inherit" }}>{q.example}</pre>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -1,0 +1,119 @@
+{
+  "title": "String Manipulation & Regex",
+  "slug": "strings",
+  "category": "Core Java",
+  "difficulty": "Beginner",
+  "description": "Understand String immutability, the String Pool, StringBuilder, and how to use Regular Expressions in Java.",
+  "content": "## Strings in Java\n\nIn Java, `String` is an object that represents a sequence of characters. It is the most widely used class in Java.\n\n### Immutability & The String Pool\n- **Immutable**: Once a String object is created, its data or state cannot be changed. Modifying a string (like calling `replace()` or `toUpperCase()`) actually creates and returns a completely new String object.\n- **String Pool**: A special memory region in the Heap where the JVM stores String literals. When you create a String literal (e.g., `String s = \"Java\"`), the JVM checks the pool. If \"Java\" exists, it returns a reference to the pooled instance. If not, it creates a new one in the pool.\n\n### Mutable Strings\nBecause concatenating immutable strings in a loop creates many temporary objects (garbage), Java provides mutable alternatives:\n- **StringBuilder**: Fast, but not thread-safe. Used in 99% of cases.\n- **StringBuffer**: Thread-safe (synchronized), but slower. Legacy.\n\n### Regular Expressions (Regex)\nUsed to search, extract, or manipulate text based on patterns. Handled via the `java.util.regex.Pattern` and `Matcher` classes.",
+  "codeExamples": [
+    {
+      "title": "Strings and Regex",
+      "language": "java",
+      "code": "import java.util.regex.*;\n\npublic class StringDemo {\n    public static void main(String[] args) {\n        // String Pool behavior\n        String s1 = \"Hello\";\n        String s2 = \"Hello\";\n        String s3 = new String(\"Hello\"); // Forces creation in heap, bypassing pool\n\n        System.out.println(s1 == s2); // true (same reference)\n        System.out.println(s1 == s3); // false (different references)\n        System.out.println(s1.equals(s3)); // true (same content)\n\n        // Efficient concatenation\n        StringBuilder sb = new StringBuilder();\n        for (int i = 0; i < 3; i++) {\n            sb.append(i).append(\",\");\n        }\n        System.out.println(sb.toString()); // 0,1,2,\n\n        // Regex matching (Finding numbers in text)\n        String text = \"Order 123 arrived on 2026-07-11\";\n        Pattern pattern = Pattern.compile(\"\\\\d+\");\n        Matcher matcher = pattern.matcher(text);\n        \n        while (matcher.find()) {\n            System.out.println(\"Found number: \" + matcher.group());\n        }\n    }\n}",
+      "explanation": "This demonstrates the difference between == and equals() when dealing with the String Pool, how to efficiently build strings using StringBuilder, and how to extract multiple numeric patterns from a text using the Matcher."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "Why are Strings immutable in Java?",
+      "answer": "Strings are immutable for several critical reasons: 1) **Security**: Strings are widely used as parameters for network connections, file paths, and database URLs. If they were mutable, a hacker could change a file path after it was validated but before it was executed. 2) **Thread Safety**: Immutable objects are inherently thread-safe and can be shared across multiple threads without synchronization. 3) **Caching**: Immutability makes the String Pool possible, saving massive amounts of heap memory. 4) **Hashcode Caching**: Since a String cannot change, its hashcode is calculated once and cached, making it extremely fast for use as keys in a HashMap.",
+      "example": "String s = \"Java\";\n// Doesn't modify the original 's'. Returns a new object.\ns.toUpperCase(); \nSystem.out.println(s); // Still prints \"Java\""
+    },
+    {
+      "question": "What is the String Pool?",
+      "answer": "The String Pool (or String Intern Pool) is a special storage area in the Java Heap. To conserve memory and improve performance, the JVM ensures that all String literals with the exact same sequence of characters point to the same memory location in the pool. When you declare `String s = \"Hello\"`, the JVM looks in the pool. If \"Hello\" is already there, it returns the existing reference. If not, it creates a new entry.",
+      "example": "String a = \"Apple\"; // Created in pool\nString b = \"Apple\"; // Points to the exact same object in the pool\nSystem.out.println(a == b); // true"
+    },
+    {
+      "question": "What is the difference between `==` and `.equals()` when comparing Strings?",
+      "answer": "The `==` operator compares the memory addresses (references) of the two String objects to see if they point to the exact same object in the heap. The `.equals()` method compares the actual contents (character by character) of the two Strings to see if they hold the exact same text, regardless of where they live in memory. You should ALWAYS use `.equals()` to compare string values in Java.",
+      "example": "String s1 = \"Hi\";\nString s2 = new String(\"Hi\"); // Forces creation of a new object outside the pool\n\nSystem.out.println(s1 == s2); // false (different memory addresses)\nSystem.out.println(s1.equals(s2)); // true (same text content)"
+    },
+    {
+      "question": "What does the `intern()` method do?",
+      "answer": "When you call `s.intern()` on a String object, the JVM checks if the exact string value of `s` already exists in the String Pool. If it does, `intern()` returns the reference from the pool. If it doesn't, it adds the string value to the pool and returns a reference to that newly pooled string. It is used to forcefully move heap strings into the pool to save memory when processing lots of duplicated dynamic strings.",
+      "example": "String heapString = new String(\"Java\"); // In heap\nString pooledString = \"Java\"; // In pool\n\nSystem.out.println(heapString == pooledString); // false\nSystem.out.println(heapString.intern() == pooledString); // true"
+    },
+    {
+      "question": "What is the difference between String, StringBuilder, and StringBuffer?",
+      "answer": "1. **String**: Immutable. Every modification creates a new object. Slow for concatenation loops.\n2. **StringBuffer**: Mutable. Methods are `synchronized`, making it thread-safe but much slower due to locking overhead. Introduced in Java 1.0.\n3. **StringBuilder**: Mutable. Not synchronized, making it incredibly fast. This is the standard choice for string manipulation in 99% of single-threaded scenarios. Introduced in Java 1.5.",
+      "example": "// Inside a loop, ALWAYS use StringBuilder\nStringBuilder sb = new StringBuilder();\nfor (int i = 0; i < 1000; i++) {\n    sb.append(i); // Modifies the internal char array directly\n}"
+    },
+    {
+      "question": "Does Java optimize `+` concatenation?",
+      "answer": "Yes. Prior to Java 9, the compiler automatically converted `\"A\" + \"B\" + \"C\"` into a `StringBuilder.append()` chain behind the scenes. Starting in Java 9, this was replaced by `invokedynamic` and `StringConcatFactory` to provide even better performance optimizations. However, this optimization only works for single statements. If you concatenate strings inside a `for` or `while` loop using `+`, the compiler creates a brand new `StringBuilder` and `String` object on *every single iteration*, completely thrashing the Garbage Collector.",
+      "example": "// Good (Compiler optimizes this perfectly)\nString s = a + b + c; \n\n// BAD! (Creates 1000 StringBuilders and 1000 Strings)\nString result = \"\";\nfor(int i=0; i<1000; i++) result += i;"
+    },
+    {
+      "question": "How are Strings represented internally in memory?",
+      "answer": "Prior to Java 9, a String internally stored its characters in a `char[]` array (where each `char` is 2 bytes, encoded in UTF-16). Starting in Java 9, to drastically save memory, the internal representation changed to a `byte[]` array along with a flag (`coder`). If the string contains only standard ASCII/Latin-1 characters, it uses 1 byte per character. If it contains special Unicode characters, it uses 2 bytes per character. This feature is called **Compact Strings**.",
+      "example": "// Java 8 internal: private final char[] value;\n// Java 9+ internal: private final byte[] value; private final byte coder;"
+    },
+    {
+      "question": "How do you reverse a String in Java?",
+      "answer": "The `String` class does not have a built-in `reverse()` method because it is immutable. The standard and fastest way to reverse a string is to pass it into a `StringBuilder` (or `StringBuffer`), call its built-in `reverse()` method, and then convert it back to a `String`.",
+      "example": "String original = \"Java\";\nString reversed = new StringBuilder(original).reverse().toString();\nSystem.out.println(reversed); // \"avaJ\""
+    },
+    {
+      "question": "What is the difference between `split()` and `StringTokenizer`?",
+      "answer": "`StringTokenizer` is a legacy class from Java 1.0. It is fast but inflexible. It only splits by literal characters. `String.split()` takes a Regular Expression, making it incredibly powerful (e.g., splitting by multiple spaces, digits, or complex patterns). You should almost always use `split()` in modern Java.",
+      "example": "String text = \"apple,  banana,orange\";\n// Splits by comma followed by ANY number of spaces\nString[] fruits = text.split(\",\\\\s*\"); \n// Output: [apple, banana, orange]"
+    },
+    {
+      "question": "Explain the `String.join()` method.",
+      "answer": "Introduced in Java 8, `String.join()` is a highly convenient static method used to concatenate multiple strings or a collection of strings together, separated by a specified delimiter. It eliminates the boilerplate of writing loops and handling the trailing delimiter manually.",
+      "example": "List<String> list = List.of(\"Java\", \"Python\", \"Go\");\nString csv = String.join(\", \", list);\nSystem.out.println(csv); // \"Java, Python, Go\""
+    },
+    {
+      "question": "What are the Pattern and Matcher classes in Java Regex?",
+      "answer": "`Pattern` is a compiled representation of a regular expression. Compiling a regex takes CPU time, so `Pattern` objects should be cached and reused if the regex is used frequently. `Matcher` is an engine that performs match operations on a character sequence by interpreting a `Pattern`. It holds the state of the search.",
+      "example": "private static final Pattern EMAIL_PATTERN = Pattern.compile(\"^.+@.+\\\\.com$\");\n\npublic boolean isValidEmail(String email) {\n    Matcher matcher = EMAIL_PATTERN.matcher(email);\n    return matcher.matches();\n}"
+    },
+    {
+      "question": "What is the difference between `matches()`, `lookingAt()`, and `find()` in Regex?",
+      "answer": "- `matches()`: Attempts to match the *entire* input string against the pattern. If even one character at the end doesn't match, it returns false.\n- `lookingAt()`: Attempts to match the input string *starting from the beginning* against the pattern. It doesn't care if the rest of the string matches.\n- `find()`: Scans the input string looking for the *next subsequence* that matches the pattern. It is usually used in a `while` loop to find multiple occurrences in a large text.",
+      "example": "Pattern p = Pattern.compile(\"Java\");\nMatcher m = p.matcher(\"Java is cool\");\nSystem.out.println(m.matches()); // false (because of \" is cool\")\nSystem.out.println(m.lookingAt()); // true\nSystem.out.println(m.find()); // true"
+    },
+    {
+      "question": "How do you extract parts of a string using Regex Capture Groups?",
+      "answer": "You define Capture Groups by enclosing parts of your regex pattern in parentheses `()`. After a successful `matcher.find()` or `matches()`, you can extract the matched text for specific groups using `matcher.group(n)`. Group 0 always represents the entire matched pattern, Group 1 represents the first set of parentheses, Group 2 represents the second, and so on.",
+      "example": "String text = \"Date: 2026-07-11\";\n// Group 1: Year, Group 2: Month, Group 3: Day\nPattern p = Pattern.compile(\"(\\\\d{4})-(\\\\d{2})-(\\\\d{2})\");\nMatcher m = p.matcher(text);\nif (m.find()) {\n    System.out.println(\"Year: \" + m.group(1)); // \"2026\"\n}"
+    },
+    {
+      "question": "Why do we need double backslashes `\\\\` in Java Regex?",
+      "answer": "In standard regular expressions, a backslash is used as an escape character (e.g., `\\d` for a digit, `\\s` for whitespace). However, in Java, the backslash is *also* the escape character for String literals (e.g., `\\n` for newline). If you type `\"\\d\"` in Java, the compiler thinks you are trying to escape the letter 'd', which is invalid. You must escape the Java String backslash with another backslash, resulting in `\"\\\\d\"`, which the compiler passes to the Regex engine as a single `\\d`.",
+      "example": "// Standard Regex: \\bword\\b\n// Java String Regex: \"\\\\bword\\\\b\""
+    },
+    {
+      "question": "What is greedy vs. reluctant regex matching?",
+      "answer": "Quantifiers like `*` (zero or more) and `+` (one or more) are greedy by default; they match as much text as possible. For example, `\".*\"` on `<p>A</p><p>B</p>` will match the entire string from the first `<` to the very last `>`. Reluctant (or lazy) quantifiers match as little text as possible. You make a quantifier reluctant by appending a `?` to it (`*?` or `+?`).",
+      "example": "String html = \"<p>One</p><p>Two</p>\";\n// Greedy: matches \"<p>One</p><p>Two</p>\"\nMatcher m1 = Pattern.compile(\"<p>.*</p>\").matcher(html); \n\n// Reluctant: matches \"<p>One</p>\"\nMatcher m2 = Pattern.compile(\"<p>.*?</p>\").matcher(html); "
+    },
+    {
+      "question": "Can you use a switch statement with Strings?",
+      "answer": "Yes, starting from Java 7, you can use `String` objects in `switch` statements. Under the hood, the Java compiler implements this by switching on the `hashCode()` of the string, and then handling hash collisions using the `.equals()` method inside the compiled bytecode. This makes string switches very fast.",
+      "example": "switch (status.toLowerCase()) {\n    case \"active\" -> System.out.println(\"User is active\");\n    case \"banned\" -> System.out.println(\"User is banned\");\n    default -> System.out.println(\"Unknown status\");\n}"
+    },
+    {
+      "question": "How do you count the occurrences of a character in a String?",
+      "answer": "There are several ways. The fastest traditional way is a `for` loop converting to a `charArray`. A functional Java 8 approach is to use `chars().filter().count()`. A clever trick without loops is to replace the character with an empty string and subtract the new length from the original length.",
+      "example": "String s = \"abracadabra\";\n// Using Streams\nlong count = s.chars().filter(ch -> ch == 'a').count();\n\n// Using replace trick\nint countTrick = s.length() - s.replace(\"a\", \"\").length();"
+    },
+    {
+      "question": "What is String `substring()` and how did it change in Java 7?",
+      "answer": "`substring(start, end)` extracts a portion of a string. Before Java 7 Update 6, `substring()` didn't create a new character array; it returned a new String object that shared the *original* massive character array but had a different offset and count. This caused memory leaks: if you kept a 3-letter substring of a 10MB string, the entire 10MB array stayed in memory. Since Java 7u6, `substring()` creates a completely new, independent character array.",
+      "example": "String huge = load10MBText();\nString tiny = huge.substring(0, 5);\n// In modern Java, 'huge' can now be garbage collected."
+    },
+    {
+      "question": "Is it secure to store passwords in a String?",
+      "answer": "No, it is highly insecure. Because Strings are immutable and stored in the String Pool, they cannot be erased or modified. Even after you stop using the password, the plain text string will remain floating in memory until the Garbage Collector decides to clear it (which could be hours later, or never if it's pooled). A hacker taking a memory dump can read the password. Passwords should be collected in a `char[]` array, which can be explicitly overwritten with zeros (e.g., `Arrays.fill(pwd, '0')`) immediately after use.",
+      "example": "char[] password = console.readPassword();\nauthenticate(password);\nArrays.fill(password, ' '); // Wipe from memory immediately"
+    },
+    {
+      "question": "Explain String `format()`.",
+      "answer": "`String.format()` allows you to create formatted strings using C-style printf formatting rules. You insert format specifiers (like `%s` for strings, `%d` for integers, `%.2f` for floats) into a template string, and pass the arguments afterward. It is excellent for aligning text, formatting dates, or forcing a specific number of decimal places.",
+      "example": "String name = \"Alice\";\ndouble balance = 1234.5;\n// Outputs: \"User Alice has $1234.50\"\nString formatted = String.format(\"User %s has $%.2f\", name, balance);"
+    }
+  ],
+  "tags": ["string", "stringbuilder", "regex", "immutability", "string-pool", "pattern", "matcher"]
+}

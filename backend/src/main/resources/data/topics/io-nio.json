@@ -1,0 +1,119 @@
+{
+  "title": "Java I/O and NIO",
+  "slug": "io-nio",
+  "category": "Core Java",
+  "difficulty": "Intermediate",
+  "description": "Understand Java IO (Input/Output) Streams, Readers/Writers, Serialization, and the modern non-blocking NIO API.",
+  "content": "## Java I/O and NIO\n\nJava provides robust APIs for handling Input and Output, dealing with reading data from a source (Input) and writing data to a destination (Output).\n\n### Traditional I/O (`java.io`)\nIntroduced in Java 1.0, traditional I/O is **Stream-oriented** and **Blocking**. \n- **Byte Streams** (`InputStream`, `OutputStream`): Read/Write binary data (1 byte at a time). Used for images, audio, etc.\n- **Character Streams** (`Reader`, `Writer`): Read/Write character data (2 bytes/16-bit Unicode). Used for text files.\n- **Serialization**: The process of converting an object's state into a byte stream (using `ObjectOutputStream` and the `Serializable` interface).\n\n### New I/O (`java.nio`)\nIntroduced in Java 1.4 (and upgraded in Java 7 as NIO.2), NIO is **Buffer-oriented** and supports **Non-blocking** operations.\n- **Channels**: Bidirectional conduits for data (unlike unidirectional streams). Examples: `FileChannel`, `SocketChannel`.\n- **Buffers**: Blocks of memory where data is temporarily stored before being processed by a channel. Examples: `ByteBuffer`, `CharBuffer`.\n- **Selectors**: Allow a single thread to monitor multiple Channels for events (like \"connection opened\" or \"data arrived\"), enabling scalable non-blocking server architectures.",
+  "codeExamples": [
+    {
+      "title": "NIO.2 File Reading (Java 8+)",
+      "language": "java",
+      "code": "import java.nio.file.*;\nimport java.io.IOException;\nimport java.util.stream.Stream;\n\npublic class NioDemo {\n    public static void main(String[] args) {\n        Path path = Paths.get(\"data.txt\");\n\n        // Writing using NIO (Files utility class)\n        try {\n            Files.writeString(path, \"Hello NIO!\\nLine 2\");\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n\n        // Reading using NIO Streams (Memory Efficient)\n        try (Stream<String> lines = Files.lines(path)) {\n            lines.forEach(System.out::println);\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n    }\n}",
+      "explanation": "Modern Java uses the java.nio.file.Files class for almost all file operations. Using Files.lines() returns a Stream, which processes the file lazily, making it incredibly memory efficient for massive files."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between IO and NIO in Java?",
+      "answer": "Traditional IO (`java.io`) is stream-oriented and blocking. You read bytes one by one from a stream, and the thread blocks until data is available. NIO (`java.nio`) is buffer-oriented and supports non-blocking operations. Data is read in chunks into a Buffer. NIO introduces Channels (bidirectional paths) and Selectors (allowing one thread to manage multiple channels), making NIO vastly superior for highly concurrent network applications.",
+      "example": "// IO: Thread blocks waiting for network data\nInputStream in = socket.getInputStream();\nin.read(); // Blocks!\n\n// NIO: Thread can do other things if no data is available\nSocketChannel channel = SocketChannel.open();\nchannel.configureBlocking(false);"
+    },
+    {
+      "question": "What is the difference between Byte Streams and Character Streams?",
+      "answer": "Byte Streams (`InputStream` / `OutputStream` and their subclasses like `FileInputStream`) process data 1 byte at a time (8 bits). They are used for raw binary data like images, audio, or compiled files. Character Streams (`Reader` / `Writer` and subclasses like `FileReader`) process data 2 bytes at a time (16-bit Unicode characters). They are used specifically for text data and handle character encoding automatically.",
+      "example": "// Byte Stream\nFileInputStream fis = new FileInputStream(\"image.png\");\n\n// Character Stream\nFileReader fr = new FileReader(\"document.txt\");"
+    },
+    {
+      "question": "Why do we use BufferedInputStream and BufferedReader?",
+      "answer": "Calling read/write on a raw stream (like `FileReader`) triggers a physical OS-level disk access for every single character/byte. Disk I/O is extremely slow. Buffered classes wrap these raw streams and create a large internal memory array (a buffer). They read a massive chunk of data from the disk into memory at once, and subsequent `read()` calls fetch data from the fast memory buffer, drastically improving performance.",
+      "example": "// VERY SLOW: Reads from disk character by character\nFileReader fr = new FileReader(\"large.txt\");\n\n// VERY FAST: Reads from disk in large blocks\nBufferedReader br = new BufferedReader(new FileReader(\"large.txt\"));"
+    },
+    {
+      "question": "What is Serialization in Java?",
+      "answer": "Serialization is the process of converting an object's state in memory into a linear byte stream. This byte stream can then be saved to a file, sent over a network, or stored in a database. To make a class serializable, it must implement the `java.io.Serializable` marker interface. The reverse process (converting the byte stream back into an object) is called Deserialization.",
+      "example": "class User implements Serializable {\n    String name;\n    int age;\n}\n// ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(\"user.ser\"));\n// out.writeObject(new User());"
+    },
+    {
+      "question": "What does the 'transient' keyword do?",
+      "answer": "The `transient` keyword is used as a modifier for variables inside a `Serializable` class. When an object is serialized, any field marked as `transient` is completely ignored by the serialization mechanism. When the object is deserialized later, the transient field will be initialized to its default value (e.g., `null` for objects, `0` for ints). It is used to protect sensitive data (like passwords) or to skip data that can be easily recomputed.",
+      "example": "class Account implements Serializable {\n    String username;\n    transient String password; // Will not be saved to disk or sent over network\n}"
+    },
+    {
+      "question": "What is a Marker Interface?",
+      "answer": "A marker interface is an interface with absolutely no methods or fields. It simply acts as a \"tag\" for the JVM or a framework to indicate that a class possesses a certain capability or property. The most famous example is `Serializable`. If you try to serialize an object that does not implement this marker interface, the JVM throws a `NotSerializableException`.",
+      "example": "public interface Serializable {\n    // Empty! Just a marker.\n}"
+    },
+    {
+      "question": "What is the serialVersionUID?",
+      "answer": "`serialVersionUID` is a unique version identifier for a Serializable class. During deserialization, the JVM compares the `serialVersionUID` of the incoming byte stream with the ID of the local class. If they match, deserialization proceeds. If they don't, the JVM throws an `InvalidClassException`. If you don't explicitly declare it, the JVM auto-generates one based on the class structure. If you later add a field, the auto-generated ID changes, breaking all previously saved objects. Always declare it explicitly.",
+      "example": "class Employee implements Serializable {\n    private static final long serialVersionUID = 1L;\n    // Now you can add new fields without breaking compatibility with old saved objects\n}"
+    },
+    {
+      "question": "What is Externalizable?",
+      "answer": "`Externalizable` is a sub-interface of `Serializable`. While standard serialization is fully automatic (the JVM uses reflection to inspect and save all fields), `Externalizable` gives you manual control. It requires you to implement two methods: `writeExternal()` and `readExternal()`. You must manually write and read exactly which fields you want saved. It is much faster than automatic serialization because it avoids heavy reflection.",
+      "example": "class CustomData implements Externalizable {\n    public void writeExternal(ObjectOutput out) throws IOException {\n        // Manual writing\n    }\n    public void readExternal(ObjectInput in) throws IOException {\n        // Manual reading\n    }\n}"
+    },
+    {
+      "question": "How do you prevent a specific class from being serialized if its superclass is Serializable?",
+      "answer": "Because a subclass inherits the interfaces of its superclass, if the parent implements `Serializable`, the child is automatically serializable. To prevent the child from being serialized, you must override the `writeObject()` and `readObject()` methods (which are invoked reflectively by the serialization mechanism) and explicitly throw a `NotSerializableException` inside them.",
+      "example": "class SecureChild extends ParentSerializableClass {\n    private void writeObject(ObjectOutputStream out) throws IOException {\n        throw new NotSerializableException(\"Cannot serialize SecureChild\");\n    }\n}"
+    },
+    {
+      "question": "What are NIO Channels?",
+      "answer": "Channels are the NIO equivalent of IO Streams, but with key differences. Streams are unidirectional (Input OR Output), whereas Channels are bidirectional (you can read and write to the same Channel). Furthermore, Channels always interact with Buffers—you cannot read/write directly to a Channel; you read from a Channel into a Buffer, and write from a Buffer into a Channel.",
+      "example": "RandomAccessFile file = new RandomAccessFile(\"data.txt\", \"rw\");\nFileChannel channel = file.getChannel();\nByteBuffer buffer = ByteBuffer.allocate(48);\nint bytesRead = channel.read(buffer); // Reads data FROM channel INTO buffer"
+    },
+    {
+      "question": "What is an NIO Buffer and what are its core properties?",
+      "answer": "An NIO Buffer is a block of memory (an array) used in conjunction with Channels. Its three core properties are:\n1. **Capacity**: The maximum amount of data the buffer can hold.\n2. **Limit**: How much data can currently be read/written before reaching the end of valid data.\n3. **Position**: The index of the next element to be read or written.\nThe `flip()` method is crucial—it switches the buffer from 'write mode' to 'read mode' by setting the Limit to the current Position, and resetting Position to 0.",
+      "example": "ByteBuffer buf = ByteBuffer.allocate(10); // capacity:10, limit:10, position:0\nbuf.put((byte) 1); // position:1\nbuf.flip(); // limit:1, position:0 (Ready to be read)"
+    },
+    {
+      "question": "Explain Selectors in Java NIO.",
+      "answer": "A `Selector` is a component of NIO that allows a single thread to manage multiple Channels. You register multiple non-blocking Channels with a Selector, specifying which events you care about (e.g., OP_READ, OP_ACCEPT). The thread then calls `selector.select()`, which blocks until at least one of the registered channels is ready for I/O. This is the foundation of high-concurrency event loops (like NodeJS or Netty), allowing one thread to manage 10,000+ connections.",
+      "example": "Selector selector = Selector.open();\nchannel.configureBlocking(false);\nSelectionKey key = channel.register(selector, SelectionKey.OP_READ);\n\nselector.select(); // Blocks until data arrives on ANY registered channel"
+    },
+    {
+      "question": "What is the Path interface in NIO.2?",
+      "answer": "Introduced in Java 7 (NIO.2), the `Path` interface replaces the legacy `java.io.File` class as the primary way to represent a file or directory location in the file system. Unlike `File`, `Path` is interface-driven, immutable, and operates seamlessly with the `Files` utility class, providing much better error handling and symbolic link support.",
+      "example": "// Legacy\nFile f = new File(\"C:/test.txt\");\n\n// Modern NIO.2\nPath p = Paths.get(\"C:/test.txt\");\n// Or in Java 11+\nPath p11 = Path.of(\"C:/test.txt\");"
+    },
+    {
+      "question": "How do you traverse a directory tree in modern Java?",
+      "answer": "In NIO.2, you can use `Files.walk(Path)` or `Files.walkFileTree(Path, FileVisitor)`. `Files.walk()` returns a lazily populated `Stream<Path>`, making it extremely elegant to traverse deeply nested folders and apply stream operations (like filtering for `.java` files).",
+      "example": "try (Stream<Path> paths = Files.walk(Paths.get(\"/src\"))) {\n    paths.filter(Files::isRegularFile)\n         .filter(p -> p.toString().endsWith(\".java\"))\n         .forEach(System.out::println);\n}"
+    },
+    {
+      "question": "What is a Memory-Mapped File?",
+      "answer": "Memory-mapped I/O (via `MappedByteBuffer` in NIO) allows a part of a file (or the entire file) on disk to be mapped directly into the application's virtual memory address space. Once mapped, the application can read/write to the file simply by manipulating the memory array, bypassing standard OS I/O system calls. It is incredibly fast and is widely used by high-performance databases (like Kafka or Cassandra) to manage massive files.",
+      "example": "FileChannel channel = FileChannel.open(Path.of(\"data.bin\"), StandardOpenOption.READ);\n// Maps the first 10MB of the file directly into memory\nMappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, 10 * 1024 * 1024);"
+    },
+    {
+      "question": "What is the difference between direct and non-direct Buffers?",
+      "answer": "A non-direct buffer (`ByteBuffer.allocate()`) allocates memory inside the standard JVM Heap, subject to Garbage Collection. A direct buffer (`ByteBuffer.allocateDirect()`) allocates memory directly in the native OS memory, outside the JVM Heap. Direct buffers eliminate the overhead of copying data between the JVM heap and the OS space during I/O operations, making native network/disk I/O much faster, but allocating/deallocating them is more expensive.",
+      "example": "// Heap Memory (Slower I/O, fast to create)\nByteBuffer heapBuf = ByteBuffer.allocate(1024);\n\n// Native OS Memory (Fast I/O, slow to create)\nByteBuffer directBuf = ByteBuffer.allocateDirect(1024);"
+    },
+    {
+      "question": "Why is java.io.File considered legacy?",
+      "answer": "The old `java.io.File` class has several flaws: 1) Many methods return `boolean` (true/false) on failure without throwing an exception or explaining *why* it failed (e.g., `file.delete()`). 2) It has poor support for metadata (like file permissions or owners). 3) It cannot handle symbolic links correctly. The `java.nio.file.Path` and `Files` classes resolve all these issues by throwing detailed `IOException`s and supporting deep metadata.",
+      "example": "// Bad: Silently fails if locked\nboolean deleted = new File(\"file.txt\").delete(); \n\n// Good: Throws precise exception (e.g. AccessDeniedException)\nFiles.delete(Paths.get(\"file.txt\"));"
+    },
+    {
+      "question": "What happens if you serialize a static variable?",
+      "answer": "Static variables are completely ignored during serialization. Serialization is concerned exclusively with the state of an *instance* (an object) of a class. Static variables belong to the *class* itself, not the instance. Therefore, when you deserialize the object later, the static variable will simply reflect whatever value is currently held by the class in the JVM running the deserialization.",
+      "example": "class Config implements Serializable {\n    static int version = 1; // Ignored by serialization\n}"
+    },
+    {
+      "question": "What is a PrintStream?",
+      "answer": "`PrintStream` is an output stream that adds functionality to another output stream, allowing you to print representations of various data values (primitives, objects, strings) conveniently. Crucially, `PrintStream` never throws an `IOException`! If an error occurs, it sets an internal flag which can be checked via `checkError()`. `System.out` and `System.err` are the most famous instances of `PrintStream`.",
+      "example": "PrintStream ps = new PrintStream(new FileOutputStream(\"log.txt\"));\nps.println(\"This is easy!\");\nboolean hasError = ps.checkError(); // Check manually since no exception is thrown"
+    },
+    {
+      "question": "How do you read a file completely into a String in Java 11?",
+      "answer": "Prior to Java 7, reading a whole file required messy loops with `BufferedReader`. Java 7 introduced `Files.readAllBytes()`. Java 11 introduced the ultimate convenience method: `Files.readString(Path)`. It reads all content from a file into a single String, decoding from bytes to characters using the UTF-8 charset by default. It is ideal for small to medium-sized configuration or text files.",
+      "example": "try {\n    String content = Files.readString(Path.of(\"config.json\"));\n    System.out.println(content);\n} catch (IOException e) {\n    e.printStackTrace();\n}"
+    }
+  ],
+  "tags": ["io", "nio", "serialization", "streams", "buffers", "channels", "files"]
+}

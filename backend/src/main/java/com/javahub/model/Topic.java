@@ -26,7 +26,7 @@ public class Topic {
     private String description;
     private String content; // Rich markdown content
     private List<CodeExample> codeExamples;
-    private List<String> interviewQuestions;
+    private List<InterviewQuestion> interviewQuestions;
     private String difficulty; // Beginner, Intermediate, Advanced
     private List<String> tags;
 }

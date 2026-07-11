@@ -1,0 +1,119 @@
+{
+  "title": "Spring Data JPA & Hibernate",
+  "slug": "spring-data-jpa",
+  "category": "Frameworks",
+  "difficulty": "Intermediate",
+  "description": "Master Object-Relational Mapping (ORM) with Hibernate and simplify data access layers using Spring Data JPA Repositories.",
+  "content": "## Spring Data JPA & Hibernate\n\nInteracting directly with SQL databases using JDBC requires massive amounts of boilerplate code (opening connections, prepared statements, mapping ResultSets). Object-Relational Mapping (ORM) frameworks solve this by mapping Java Objects directly to Database Tables.\n\n### Key Concepts\n- **JPA (Jakarta Persistence API)**: The official Java specification/interface for ORM. It defines annotations like `@Entity`, `@Id`, and `EntityManager`.\n- **Hibernate**: The most popular concrete implementation of the JPA specification. It does the heavy lifting of generating SQL queries behind the scenes.\n- **Spring Data JPA**: A layer built *on top* of JPA/Hibernate. It completely eliminates the need to write DAO implementations by automatically generating queries based on interface method names (e.g., `findByLastName`).\n\n### Entity Lifecycle States\n1. **Transient**: An object is instantiated but not associated with a Hibernate Session (EntityManager) and has no database row.\n2. **Persistent (Managed)**: The object is associated with a Session. Any changes made to it are automatically tracked and saved to the database.\n3. **Detached**: The Session was closed. The object still exists in memory and has a DB row, but changes are no longer tracked.\n4. **Removed**: Scheduled for deletion on the next transaction commit.",
+  "codeExamples": [
+    {
+      "title": "Spring Data JPA Repository & Entity",
+      "language": "java",
+      "code": "import jakarta.persistence.*;\nimport org.springframework.data.jpa.repository.JpaRepository;\nimport org.springframework.stereotype.Service;\nimport java.util.List;\n\n// 1. The JPA Entity (Maps to a DB Table)\n@Entity\n@Table(name = \"users\")\nclass User {\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long id;\n    \n    @Column(nullable = false, unique = true)\n    private String email;\n    \n    private String status;\n\n    // Getters, Setters, Constructors omitted for brevity\n}\n\n// 2. The Spring Data Repository (No implementation class needed!)\ninterface UserRepository extends JpaRepository<User, Long> {\n    // Spring automatically generates the SQL for this based on the name!\n    // SELECT * FROM users WHERE status = ?\n    List<User> findByStatus(String status);\n}\n\n// 3. The Service Layer\n@Service\nclass UserService {\n    private final UserRepository repo;\n    public UserService(UserRepository repo) { this.repo = repo; }\n\n    public List<User> getActiveUsers() {\n        return repo.findByStatus(\"ACTIVE\");\n    }\n}",
+      "explanation": "This demonstrates the massive productivity boost of Spring Data JPA. By simply declaring an interface extending JpaRepository, you instantly gain full CRUD capabilities, and custom queries can be generated just by naming the method correctly."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between JPA and Hibernate?",
+      "answer": "JPA (Jakarta Persistence API, formerly Java Persistence API) is merely a specification. It is a set of interfaces and annotations (like `@Entity`, `@Id`) that define the standard for ORM in Java. It contains no actual implementation code. Hibernate is a concrete ORM framework that implements the JPA specification. If JPA is the interface, Hibernate is the class that implements it.",
+      "example": "// JPA Annotation\nimport jakarta.persistence.Entity;\n\n// Hibernate does the actual work of turning this Entity into a SQL CREATE TABLE command"
+    },
+    {
+      "question": "What is Spring Data JPA?",
+      "answer": "Spring Data JPA is an abstraction layer built on top of JPA (which is usually powered by Hibernate). While raw JPA requires you to write boilerplate code using `EntityManager` to create/read/update entities, Spring Data JPA eliminates this by providing the `JpaRepository` interface. You simply extend the interface, and Spring dynamically generates the implementation and SQL queries at runtime based on your method names.",
+      "example": "// Raw JPA: entityManager.createQuery(\"SELECT u FROM User u WHERE u.age = ?1\").setParameter(1, age).getResultList();\n\n// Spring Data JPA: \nList<User> findByAge(int age); // Spring generates the query automatically!"
+    },
+    {
+      "question": "What is the difference between CrudRepository and JpaRepository?",
+      "answer": "`CrudRepository` is a base interface that provides standard CRUD methods (Create, Read, Update, Delete) like `save()`, `findById()`, and `delete()`. `JpaRepository` extends `CrudRepository` (and `PagingAndSortingRepository`) and adds JPA-specific methods, such as `flush()`, `saveAndFlush()`, and batch deletion. Furthermore, `JpaRepository` methods return `List` instead of `Iterable`, which is usually much easier to work with.",
+      "example": "// CrudRepository returns Iterable\nIterable<User> findAll();\n\n// JpaRepository returns List\nList<User> findAll();"
+    },
+    {
+      "question": "Explain the concept of 'Dirty Checking' in Hibernate.",
+      "answer": "Dirty checking is a core feature of Hibernate. When you fetch an entity from the database inside an active transaction, the entity enters the 'Managed' state. Hibernate takes a snapshot of its initial state. Before the transaction commits, Hibernate compares the entity's current state against the snapshot. If any fields have changed (the entity is 'dirty'), Hibernate automatically generates and executes an `UPDATE` SQL statement. You do NOT need to call `repository.save()`.",
+      "example": "@Transactional\npublic void updateEmail(Long id, String newEmail) {\n    User user = repo.findById(id).get();\n    user.setEmail(newEmail);\n    // No save() needed. Dirty checking updates the DB on commit.\n}"
+    },
+    {
+      "question": "What are the Entity lifecycle states in JPA?",
+      "answer": "1. **Transient**: Newly created via `new`. No database ID, not tracked by EntityManager. \n2. **Managed (Persistent)**: Attached to the EntityManager. Any changes will be synchronized to the DB via dirty checking.\n3. **Detached**: The EntityManager was closed or cleared. The object exists in memory but changes are no longer tracked.\n4. **Removed**: Marked for deletion. Will be deleted from DB upon transaction commit.",
+      "example": "User u = new User(); // Transient\nrepo.save(u); // Managed\n// ... transaction ends ... \n// u is now Detached"
+    },
+    {
+      "question": "How do you define a Primary Key in JPA?",
+      "answer": "You mark a field with the `@Id` annotation. Usually, you also use `@GeneratedValue` to tell the database to auto-generate the ID. The `GenerationType.IDENTITY` strategy relies on the database's auto-increment feature (like MySQL). `GenerationType.SEQUENCE` relies on a database sequence (like PostgreSQL/Oracle) and is highly recommended for performance because it supports JDBC batch inserts, whereas `IDENTITY` does not.",
+      "example": "@Id\n@GeneratedValue(strategy = GenerationType.IDENTITY)\nprivate Long id;"
+    },
+    {
+      "question": "What is the N+1 Query Problem and how do you fix it?",
+      "answer": "The N+1 problem occurs when fetching a list of parent entities (1 query) and then lazily fetching their child entities in a loop (N queries). If you fetch 100 Authors and then loop to get their Books, Hibernate executes 101 queries, destroying performance. To fix it, you must eagerly fetch the children in the initial query using a `JOIN FETCH` (via `@Query`) or an `EntityGraph`, reducing it to a single SQL query.",
+      "example": "// Causes N+1 if Books are accessed in a loop:\n// List<Author> findAll(); \n\n// Fix using JOIN FETCH in a custom query:\n@Query(\"SELECT a FROM Author a JOIN FETCH a.books\")\nList<Author> findAllWithBooks();"
+    },
+    {
+      "question": "What is the difference between FetchType.LAZY and FetchType.EAGER?",
+      "answer": "`EAGER` fetching means that when you load a parent entity, Hibernate immediately joins and fetches all of its child entities in the same query. `LAZY` fetching means Hibernate creates a Proxy for the child entities and does not fetch them from the database until you explicitly call a getter method on them. **Best Practice:** ALWAYS default to `FetchType.LAZY` for all associations to prevent massive, unexpected database loads. Use `JOIN FETCH` when you explicitly need the data.",
+      "example": "@OneToMany(fetch = FetchType.LAZY) // Default for OneToMany\nprivate List<Book> books;\n\n@ManyToOne(fetch = FetchType.LAZY) // Must explicitly set for ManyToOne (default is EAGER)\nprivate Author author;"
+    },
+    {
+      "question": "How do you execute custom native SQL in Spring Data JPA?",
+      "answer": "While Spring Data usually abstracts SQL using method names or JPQL (Java Persistence Query Language), you can execute raw, database-specific SQL by using the `@Query` annotation and setting the `nativeQuery = true` flag. This is useful for complex reporting queries or using database-specific functions, but it breaks database portability.",
+      "example": "@Query(value = \"SELECT * FROM users u WHERE u.email LIKE %?1%\", nativeQuery = true)\nList<User> findByEmailPatternNative(String pattern);"
+    },
+    {
+      "question": "What is the difference between save() and saveAndFlush()?",
+      "answer": "When you call `save()`, Hibernate often delays executing the actual `INSERT` or `UPDATE` SQL statement until the very end of the transaction (at commit time) to optimize batching. This is called the 'write-behind' cache. `saveAndFlush()` forces Hibernate to immediately flush the session, sending the SQL statement to the database instantly. This is sometimes necessary if subsequent queries in the same transaction rely on database triggers or exact DB state.",
+      "example": "repo.save(user); // SQL might not fire yet\nrepo.saveAndFlush(user); // SQL fires immediately"
+    },
+    {
+      "question": "What is JPQL?",
+      "answer": "JPQL (Java Persistence Query Language) is the object-oriented query language defined by JPA. It is very similar to SQL, but instead of querying database tables and columns, you query Java Entity classes and their fields. Hibernate translates JPQL into the correct SQL dialect for your specific database (e.g., MySQL or Oracle) at runtime.",
+      "example": "// SQL: SELECT * FROM users_tbl WHERE first_name = 'Alice'\n// JPQL:\n@Query(\"SELECT u FROM User u WHERE u.firstName = 'Alice'\")\nList<User> findAlices();"
+    },
+    {
+      "question": "How do you implement Pagination in Spring Data JPA?",
+      "answer": "You can add a `Pageable` parameter to your repository method. Instead of returning a `List`, the method can return a `Page` object, which contains the subset of data as well as metadata (total pages, total elements, current page number). Spring Data automatically handles appending the `LIMIT` and `OFFSET` clauses to the generated SQL.",
+      "example": "// Repository\nPage<User> findByStatus(String status, Pageable pageable);\n\n// Service call (Page 0, 10 items per page, sorted by id desc)\nPageable p = PageRequest.of(0, 10, Sort.by(\"id\").descending());\nPage<User> page = repo.findByStatus(\"ACTIVE\", p);"
+    },
+    {
+      "question": "What is @MappedSuperclass?",
+      "answer": "When multiple entities share common fields (like `id`, `createdAt`, `updatedAt`), you can place them in a base class and annotate it with `@MappedSuperclass`. The base class is NOT an entity (it doesn't have its own table), but its mapped fields will be injected into the database tables of any Entity classes that extend it.",
+      "example": "@MappedSuperclass\nabstract class BaseEntity {\n    @Id @GeneratedValue\n    Long id;\n    LocalDateTime createdAt;\n}\n\n@Entity\nclass Product extends BaseEntity { String name; } // Table gets id, createdAt, name"
+    },
+    {
+      "question": "What is the purpose of @Version?",
+      "answer": "The `@Version` annotation is used to implement **Optimistic Locking**. You add it to an integer or timestamp field. When Hibernate updates the entity, it automatically increments the version and adds `WHERE version = ?` to the update SQL. If another thread already updated the row (changing the version), the `WHERE` clause fails to find a match, and Hibernate throws an `OptimisticLockException`. This prevents lost updates in highly concurrent applications without using slow database row locks.",
+      "example": "@Entity\nclass Account {\n    @Id Long id;\n    int balance;\n    @Version int version; // Hibernate manages this automatically\n}"
+    },
+    {
+      "question": "What is the difference between Cascading and Orphan Removal?",
+      "answer": "Both relate to parent-child relationships. **Cascading** (`CascadeType.ALL`) ensures that if you perform an operation on the parent (like `save` or `delete`), that operation cascades to the children. **Orphan Removal** (`orphanRemoval = true`) is stricter: if you remove a child from the parent's collection, Hibernate interprets that child as an 'orphan' and automatically deletes it from the database.",
+      "example": "@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)\nprivate List<Comment> comments = new ArrayList<>();\n\n// If we do: post.getComments().remove(0);\n// Hibernate will issue a DELETE SQL to remove that comment from the DB."
+    },
+    {
+      "question": "How do you handle Many-To-Many relationships in JPA?",
+      "answer": "You use the `@ManyToMany` annotation. In a relational database, this requires a junction (join) table. In JPA, you define the relationship on both entities, but you must choose one entity as the \"owner\" of the relationship and use the `@JoinTable` annotation to define the junction table details. On the inverse side, you use `mappedBy` to tell Hibernate that the other side manages the relationship.",
+      "example": "// Student side (Owner)\n@ManyToMany\n@JoinTable(name = \"student_course\", joinColumns = @JoinColumn(name = \"student_id\"), inverseJoinColumns = @JoinColumn(name = \"course_id\"))\nprivate Set<Course> courses;\n\n// Course side (Inverse)\n@ManyToMany(mappedBy = \"courses\")\nprivate Set<Student> students;"
+    },
+    {
+      "question": "What is the 1st Level Cache and 2nd Level Cache in Hibernate?",
+      "answer": "The **1st Level Cache** is mandatory and operates at the Session (EntityManager) level. If you request the same entity by ID twice within the same transaction, Hibernate hits the DB once and returns the cached object the second time. It clears when the transaction ends. The **2nd Level Cache** is optional and operates at the Application (SessionFactory) level. It caches entities across multiple transactions and sessions. It requires a third-party provider like Ehcache or Redis.",
+      "example": "// 1st Level Cache in action\nUser u1 = repo.findById(1L).get(); // Hits DB\nUser u2 = repo.findById(1L).get(); // No DB hit, returns cached instance from session"
+    },
+    {
+      "question": "What is a Projection in Spring Data JPA?",
+      "answer": "Fetching massive Entity objects with dozens of columns is slow if you only need the user's name and email. Spring Data Projections allow you to define a subset of data using an interface. Spring Data will automatically optimize the generated SQL to `SELECT` only those specific columns, drastically improving performance.",
+      "example": "interface UserSummary {\n    String getFirstName();\n    String getEmail();\n}\n\n// Repository method\nList<UserSummary> findByStatus(String status);\n// Generates: SELECT first_name, email FROM users WHERE status = ?"
+    },
+    {
+      "question": "How do you update specific fields without retrieving the whole entity?",
+      "answer": "Standard dirty checking requires fetching the entity first (`SELECT`), modifying it, and letting the commit trigger the `UPDATE`. If you want to issue an `UPDATE` blindly for performance, you can use `@Modifying` in combination with a custom `@Query` containing an `UPDATE` statement. Note: This bypasses the 1st level cache and dirty checking entirely.",
+      "example": "@Modifying\n@Query(\"UPDATE User u SET u.status = :status WHERE u.id = :id\")\nint updateStatus(@Param(\"id\") Long id, @Param(\"status\") String status);"
+    },
+    {
+      "question": "What does the @Transactional annotation do?",
+      "answer": "`@Transactional` tells Spring to wrap the method execution in a database transaction. Before the method starts, Spring opens a transaction. If the method completes successfully, Spring commits the transaction (triggering Hibernate's dirty checking flush). If the method throws a `RuntimeException`, Spring automatically rolls back the transaction. Checked exceptions do NOT trigger a rollback by default unless specified (`rollbackFor = Exception.class`).",
+      "example": "@Transactional\npublic void transferMoney(Long from, Long to, int amt) {\n    deduct(from, amt); \n    add(to, amt);\n    // If this throws RuntimeException, deduct is rolled back.\n}"
+    }
+  ],
+  "tags": ["spring-data", "jpa", "hibernate", "orm", "repository", "transactional"]
+}

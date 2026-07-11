@@ -1,0 +1,119 @@
+{
+  "title": "Collections Framework",
+  "slug": "collections",
+  "category": "Core Java",
+  "difficulty": "Intermediate",
+  "description": "Deep dive into Java Collections: List, Set, Map, Queue — understand when to use which implementation for optimal performance.",
+  "content": "## Java Collections Framework\n\nThe Collections Framework provides a unified architecture for storing and manipulating groups of objects. It includes interfaces, implementations, and algorithms.\n\n### Hierarchy\n- **Collection** (interface)\n  - **List** - Ordered, allows duplicates. Examples: `ArrayList` (dynamic array, fast reads), `LinkedList` (doubly-linked list, fast inserts/deletes at ends).\n  - **Set** - No duplicates. Examples: `HashSet` (backed by HashMap, no order), `TreeSet` (sorted order, backed by TreeMap), `LinkedHashSet` (maintains insertion order).\n  - **Queue** - FIFO ordering. Examples: `PriorityQueue` (ordered by priority), `ArrayDeque` (fast double-ended queue).\n- **Map** (interface) - Key-value pairs. Does not inherit from Collection. Examples: `HashMap` (fast, no order), `TreeMap` (sorted by keys), `ConcurrentHashMap` (thread-safe, high concurrency).\n\n### Big-O Performance\n- **ArrayList**: `get()` is O(1), `add()` is amortized O(1), `insert/remove` is O(n).\n- **LinkedList**: `get()` is O(n), `add()` is O(1).\n- **HashSet / HashMap**: `add/put`, `contains/containsKey`, `remove` are O(1) assuming no hash collisions.\n- **TreeSet / TreeMap**: `add/put`, `contains/containsKey`, `remove` are O(log n).",
+  "codeExamples": [
+    {
+      "title": "Collections Essentials",
+      "language": "java",
+      "code": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // ArrayList: Fast reads\n        List<String> list = new ArrayList<>();\n        list.add(\"Java\"); list.add(\"Python\");\n\n        // HashSet: Fast lookups, no duplicates\n        Set<String> set = new HashSet<>(list);\n        set.add(\"Java\"); // Ignored, duplicate\n\n        // HashMap: Key-value mapping\n        Map<String, Integer> map = new HashMap<>();\n        map.put(\"Java\", 21);\n        map.put(\"Spring\", 3);\n\n        // TreeMap: Sorted by keys\n        Map<String, Integer> sortedMap = new TreeMap<>(map);\n        \n        System.out.println(\"Set: \" + set);\n        System.out.println(\"Sorted Map: \" + sortedMap);\n    }\n}",
+      "explanation": "Demonstrates the most commonly used collections. An ArrayList is used for general lists. HashSet is used when uniqueness is required. HashMap maps keys to values, and TreeMap automatically sorts those keys."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between Array and ArrayList?",
+      "answer": "An Array is a fixed-size, fundamental data structure that can hold both primitives and objects. An ArrayList is part of the Collections framework, backed by a dynamic array. It can only hold objects (primitives are autoboxed). ArrayList automatically resizes itself when full (typically growing by 50% in Java). While arrays are slightly faster and consume less memory, ArrayLists provide powerful utility methods (add, remove, contains, etc.).",
+      "example": "int[] arr = new int[5]; // Fixed size of 5, holds primitives\n// arr[5] = 10; // Throws ArrayIndexOutOfBoundsException\n\nArrayList<Integer> list = new ArrayList<>(); // Dynamic size\nlist.add(10); // Autoboxes int to Integer"
+    },
+    {
+      "question": "How does a HashMap work internally in Java?",
+      "answer": "A HashMap is backed by an array of Nodes (or Entry objects). When `put(key, value)` is called, it calculates the hash code of the key to determine the index in the array (buckets). If multiple keys hash to the same index (a collision), they are stored in a Linked List at that index. In Java 8+, if the linked list length exceeds 8 (TREEIFY_THRESHOLD), it transforms into a self-balancing Red-Black tree to improve worst-case lookup performance from O(n) to O(log n).",
+      "example": "Map<String, String> map = new HashMap<>();\nmap.put(\"AaAa\", \"Value 1\"); \nmap.put(\"BBBB\", \"Value 2\");\n// \"AaAa\" and \"BBBB\" often have the same hashcode, causing a collision.\n// They will be stored in the same bucket via Linked List / Tree."
+    },
+    {
+      "question": "What happens if two keys have the same hashcode in a HashMap?",
+      "answer": "This is known as a Hash Collision. The HashMap resolves this using 'Separate Chaining'. Both entries are stored in the same bucket. Prior to Java 8, they formed a Linked List. The `get(key)` method finds the bucket using the hashcode, and then iterates through the linked list, using the `equals()` method to find the exact key. To optimize performance in Java 8+, large linked lists are converted to Red-Black Trees.",
+      "example": "// Inside HashMap (pseudocode)\nint hash = key.hashCode();\nint index = hash & (capacity - 1);\nNode bucket = table[index];\n// Iterate through bucket comparing key.equals(existingKey)"
+    },
+    {
+      "question": "Why should we override equals() and hashCode() together?",
+      "answer": "The contract between `equals()` and `hashCode()` states that if two objects are equal according to `equals()`, they MUST return the same `hashCode()`. Hash-based collections (HashSet, HashMap) rely on `hashCode()` to find the correct bucket. If you override `equals()` without overriding `hashCode()`, two logically equal objects might land in different buckets, causing a HashMap to \"lose\" the object and fail to retrieve it.",
+      "example": "class Person {\n    String id;\n    // If you override equals() to compare 'id'...\n    @Override\n    public boolean equals(Object o) { /* ... */ }\n    // ...you MUST override hashCode() using 'id'\n    @Override\n    public int hashCode() { return Objects.hash(id); }\n}"
+    },
+    {
+      "question": "Difference between ArrayList and LinkedList?",
+      "answer": "ArrayList is backed by a dynamic array. It offers O(1) random access (get), but inserting/deleting in the middle is O(n) because elements must be shifted. LinkedList is implemented as a doubly-linked list. Random access is O(n), but adding/removing at the ends (or via Iterator) is O(1). ArrayList has better cache locality and uses less memory, making it the preferred choice for 99% of use cases.",
+      "example": "List<String> arrayList = new ArrayList<>();\narrayList.get(500); // Instant O(1)\n\nList<String> linkedList = new LinkedList<>();\nlinkedList.get(500); // Slow O(n), traverses node by node"
+    },
+    {
+      "question": "What is the difference between HashSet, LinkedHashSet, and TreeSet?",
+      "answer": "All three implement the `Set` interface and guarantee no duplicates. `HashSet` is backed by a HashMap; it is the fastest O(1) but offers no ordering guarantees. `LinkedHashSet` maintains a doubly-linked list across its elements, preserving insertion order (slightly slower than HashSet). `TreeSet` is backed by a TreeMap (Red-Black tree); it sorts elements according to their natural ordering (or a Comparator) and has O(log n) performance.",
+      "example": "Set<Integer> hash = new HashSet<>(List.of(3, 1, 2)); // Order unpredictable\nSet<Integer> linked = new LinkedHashSet<>(List.of(3, 1, 2)); // [3, 1, 2]\nSet<Integer> tree = new TreeSet<>(List.of(3, 1, 2)); // [1, 2, 3] sorted"
+    },
+    {
+      "question": "How does ConcurrentHashMap achieve thread safety without locking the whole map?",
+      "answer": "In Java 8+, `ConcurrentHashMap` uses a combination of CAS (Compare-And-Swap) operations and fine-grained synchronized blocks on individual node/bucket heads (Lock Striping). Unlike `Hashtable` or `Collections.synchronizedMap()`, which lock the entire map structure for every read/write, ConcurrentHashMap allows multiple threads to read concurrently without locking, and allows concurrent writes as long as they are targeting different buckets.",
+      "example": "Map<String, Integer> map = new ConcurrentHashMap<>();\n// Thread A and Thread B can execute put() simultaneously \n// without blocking each other, assuming keys hash to different buckets.\nmap.put(\"A\", 1);\nmap.put(\"B\", 2);"
+    },
+    {
+      "question": "What is the difference between Fail-Fast and Fail-Safe Iterators?",
+      "answer": "A Fail-Fast iterator (e.g., ArrayList, HashMap) throws a `ConcurrentModificationException` immediately if the collection is structurally modified (elements added/removed) while iterating, except through the iterator's own `remove()` method. It tracks a `modCount` variable. A Fail-Safe iterator (e.g., ConcurrentHashMap, CopyOnWriteArrayList) operates on a clone of the collection or handles concurrency internally, so it never throws the exception, but it might not reflect the latest data.",
+      "example": "List<String> list = new ArrayList<>(List.of(\"A\", \"B\"));\nfor(String s : list) {\n    if (s.equals(\"A\")) list.remove(s); // THROWS ConcurrentModificationException\n}"
+    },
+    {
+      "question": "What is a PriorityQueue in Java?",
+      "answer": "A `PriorityQueue` is an unbounded queue based on a priority heap. Elements are ordered according to their natural ordering (using `Comparable`) or by a `Comparator` provided at queue construction time. The head of the queue is always the \"least\" element based on the ordering. `add` and `poll` operations take O(log n) time.",
+      "example": "// Min-Heap (default)\nQueue<Integer> pq = new PriorityQueue<>();\npq.addAll(List.of(5, 1, 3));\nSystem.out.println(pq.poll()); // Prints 1\n\n// Max-Heap\nQueue<Integer> maxPq = new PriorityQueue<>(Collections.reverseOrder());"
+    },
+    {
+      "question": "Difference between Comparable and Comparator?",
+      "answer": "`Comparable` is an interface implemented by a class to define its *natural* or default ordering (e.g., String, Integer). It contains a single method `compareTo(T o)`. `Comparator` is a separate utility interface containing the `compare(T o1, T o2)` method. It is used to define *custom* or multiple sorting strategies without modifying the original class source code.",
+      "example": "// Comparable (Natural Ordering inside the class)\nclass User implements Comparable<User> {\n    int id;\n    public int compareTo(User other) { return Integer.compare(this.id, other.id); }\n}\n\n// Comparator (External custom sorting)\nComparator<User> byNameDesc = (u1, u2) -> u2.name.compareTo(u1.name);"
+    },
+    {
+      "question": "How does CopyOnWriteArrayList work and when should you use it?",
+      "answer": "`CopyOnWriteArrayList` is a thread-safe variant of ArrayList where all mutative operations (add, set, remove) are implemented by making a fresh underlying copy of the entire array. This makes writes very expensive (O(n)), but reads are extremely fast and require absolutely no locking. It is ideal for scenarios where the collection is read frequently but modified rarely (e.g., a list of Event Listeners).",
+      "example": "List<String> cowList = new CopyOnWriteArrayList<>();\ncowList.add(\"Item\"); // Creates a new internal array clone\n// Iterators read from the snapshot taken at creation time\nfor (String item : cowList) {\n    System.out.println(item); // Never throws ConcurrentModificationException\n}"
+    },
+    {
+      "question": "Why does Map not extend the Collection interface?",
+      "answer": "The `Collection` interface represents a group of individual objects (elements), whereas a `Map` represents a mapping between a key and a value (a collection of pairs). The logical structure is entirely different. For example, `Collection.add(Object o)` takes one argument, but a Map requires `put(Key k, Value v)`. Trying to force Map to extend Collection would violate the Interface Segregation Principle.",
+      "example": "Collection<String> list = new ArrayList<>();\nlist.add(\"Single item\");\n\nMap<String, String> map = new HashMap<>();\nmap.put(\"Key\", \"Value\"); // Fundamentally different signature"
+    },
+    {
+      "question": "What is the difference between Iterator and ListIterator?",
+      "answer": "`Iterator` is a general interface that can traverse any Collection, but it only goes forward (`hasNext()`, `next()`) and allows safe removal (`remove()`). `ListIterator` is an extension specific to Lists (ArrayList, LinkedList). It allows bidirectional traversal (`hasPrevious()`, `previous()`), replacing elements (`set()`), adding elements during iteration (`add()`), and getting the current index.",
+      "example": "List<String> list = new ArrayList<>(List.of(\"A\", \"B\", \"C\"));\nListIterator<String> iter = list.listIterator();\nwhile (iter.hasNext()) {\n    String val = iter.next();\n    if (val.equals(\"B\")) iter.set(\"Z\"); // Replaces B with Z\n}"
+    },
+    {
+      "question": "How do you make a Collection read-only (unmodifiable)?",
+      "answer": "You can wrap an existing collection using `Collections.unmodifiableList()`, `unmodifiableSet()`, etc. This returns a view that throws `UnsupportedOperationException` if mutative methods (add/remove) are called. In Java 9+, you can create genuinely immutable collections directly using factory methods like `List.of()`, `Set.of()`, and `Map.of()`.",
+      "example": "// Java 8 way (Unmodifiable View)\nList<String> list = new ArrayList<>(); list.add(\"A\");\nList<String> unmodifiable = Collections.unmodifiableList(list);\n\n// Java 9+ way (True Immutable Collection)\nList<String> immutable = List.of(\"A\", \"B\");\n// immutable.add(\"C\"); // Throws UnsupportedOperationException"
+    },
+    {
+      "question": "What is the initial capacity and load factor of a HashMap?",
+      "answer": "The default initial capacity of a HashMap is 16 (it must always be a power of 2). The default load factor is 0.75. The threshold for resizing is `capacity * load_factor`. When the number of entries exceeds this threshold (e.g., 16 * 0.75 = 12), the HashMap automatically resizes (doubles its capacity to 32) and rehashes all existing elements to the new buckets to maintain O(1) performance.",
+      "example": "// Custom capacity and load factor\nMap<String, String> customMap = new HashMap<>(32, 0.8f);\n// Resizes when size reaches 32 * 0.8 = 25"
+    },
+    {
+      "question": "Difference between Hashtable and HashMap?",
+      "answer": "`Hashtable` is a legacy class from Java 1.0. It is thread-safe because every method is `synchronized`, but this makes it extremely slow in multi-threaded environments. It does not allow `null` keys or values. `HashMap` is not thread-safe (faster), allows one `null` key and multiple `null` values. For modern thread-safe maps, `ConcurrentHashMap` is preferred over `Hashtable`.",
+      "example": "Map<String, String> map = new HashMap<>();\nmap.put(null, \"Allowed\"); // Valid in HashMap\n\nMap<String, String> table = new Hashtable<>();\n// table.put(null, \"Fails\"); // Throws NullPointerException"
+    },
+    {
+      "question": "What happens if we put a mutable object as a key in a HashMap?",
+      "answer": "It is highly discouraged to use mutable objects as keys in a Map. If the object's state changes after it is inserted into the map, its `hashCode()` will change. If the hashcode changes, the Map will look in the wrong bucket when calling `get(key)`, causing the entry to be \"lost\" even though it still exists in memory. Keys should always be immutable (like String or Integer).",
+      "example": "List<String> key = new ArrayList<>();\nMap<List<String>, String> map = new HashMap<>();\nmap.put(key, \"Data\");\n\nkey.add(\"Mutated\");\nSystem.out.println(map.get(key)); // Returns null! The hash changed."
+    },
+    {
+      "question": "What is WeakHashMap and when is it used?",
+      "answer": "`WeakHashMap` is a special map implementation where the keys are stored using `WeakReference` objects. If a key is no longer referenced anywhere else in the application by a strong reference, the Garbage Collector will automatically remove that entry from the map on the next GC cycle. It is primarily used for building cache systems to prevent memory leaks.",
+      "example": "Map<Object, String> cache = new WeakHashMap<>();\nObject obj = new Object();\ncache.put(obj, \"Cached Data\");\n\nobj = null; // Key is now only weakly referenced\nSystem.gc(); // Upon GC, the entry will be removed automatically"
+    },
+    {
+      "question": "Explain IdentityHashMap.",
+      "answer": "`IdentityHashMap` is a specialized map that uses reference-equality (`==`) instead of object-equality (`equals()`) when comparing keys. Two keys are considered equal only if they are the exact same object in memory. It intentionally violates the general Map contract. It is typically used for topology-preserving object graph transformations, like serialization or deep cloning, to avoid infinite loops.",
+      "example": "Map<String, String> map = new IdentityHashMap<>();\nString s1 = new String(\"A\");\nString s2 = new String(\"A\");\n\nmap.put(s1, \"Value 1\");\nmap.put(s2, \"Value 2\");\n\nSystem.out.println(map.size()); // Prints 2, because s1 != s2 in memory"
+    },
+    {
+      "question": "How do you sort a HashMap by values?",
+      "answer": "Since Map interfaces (like HashMap) are not fundamentally ordered by value, you must extract the map's `entrySet()`, place them into a List, sort the list using a custom `Comparator` comparing the values, and then optionally put the sorted entries into a `LinkedHashMap` to preserve that sorted insertion order.",
+      "example": "Map<String, Integer> map = Map.of(\"A\", 5, \"B\", 1, \"C\", 3);\n\nMap<String, Integer> sortedByValue = map.entrySet().stream()\n    .sorted(Map.Entry.comparingByValue())\n    .collect(Collectors.toMap(\n        Map.Entry::getKey, \n        Map.Entry::getValue,\n        (e1, e2) -> e1, \n        LinkedHashMap::new\n    ));\n// Result: {B=1, C=3, A=5}"
+    }
+  ],
+  "tags": ["collections", "list", "set", "map", "arraylist", "hashmap", "treemap"]
+}

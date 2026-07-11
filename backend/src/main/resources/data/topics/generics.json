@@ -1,0 +1,119 @@
+{
+  "title": "Java Generics",
+  "slug": "generics",
+  "category": "Core Java",
+  "difficulty": "Intermediate",
+  "description": "Master type safety in Java using Generics. Understand type erasure, wildcards, bounding, and generic methods.",
+  "content": "## Java Generics\n\nGenerics were introduced in Java 5 to provide compile-time type safety and eliminate the need for explicit casting. They allow types (classes and interfaces) to be parameters when defining classes, interfaces, and methods.\n\n### Key Concepts\n- **Type Parameters**: Standard conventions include `E` (Element), `K` (Key), `N` (Number), `T` (Type), `V` (Value).\n- **Type Erasure**: Generics exist strictly at compile time. To ensure backward compatibility with older Java versions, the Java compiler completely erases all type parameters and replaces them with their bounds or `Object`. This means at runtime, a `List<String>` and a `List<Integer>` are identical (both are just `List`).\n- **Wildcards (`?`)**: Represent an unknown type. \n  - Unbounded: `<?>`\n  - Upper Bounded: `<? extends Number>` (Read-only)\n  - Lower Bounded: `<? super Integer>` (Write-only)\n\n### PECS Principle\n**P**roducer **E**xtends, **C**onsumer **S**uper. \n- Use `? extends T` if you need a producer (reading data from a structure).\n- Use `? super T` if you need a consumer (writing data into a structure).",
+  "codeExamples": [
+    {
+      "title": "Generics in Action",
+      "language": "java",
+      "code": "import java.util.*;\n\n// Generic Class\nclass Box<T> {\n    private T item;\n    public void put(T item) { this.item = item; }\n    public T get() { return this.item; }\n}\n\npublic class GenericsDemo {\n    // Generic Method\n    public static <E> void printArray(E[] array) {\n        for (E element : array) System.out.print(element + \" \");\n        System.out.println();\n    }\n\n    // Wildcards & Bounding (PECS)\n    public static double sumOfList(List<? extends Number> list) {\n        double s = 0.0;\n        for (Number n : list) s += n.doubleValue(); // Reading\n        return s;\n    }\n\n    public static void main(String[] args) {\n        Box<String> strBox = new Box<>();\n        strBox.put(\"Generics\");\n        System.out.println(strBox.get());\n        \n        Integer[] ints = {1, 2, 3};\n        printArray(ints);\n        \n        List<Integer> nums = List.of(1, 2, 3);\n        System.out.println(\"Sum: \" + sumOfList(nums));\n    }\n}",
+      "explanation": "This example demonstrates creating a custom Generic class (Box), writing a Generic method capable of accepting any object array, and using Upper Bounded Wildcards to safely calculate a sum regardless of whether a List of Integers or Doubles is passed."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "Why were Generics introduced in Java?",
+      "answer": "Before Generics (Java 1.4 and earlier), collections held raw `Object` references. This required explicit downcasting every time you retrieved an item, and it lacked compile-time type safety. If you accidentally put an `Integer` into a list intended for `Strings`, the compiler wouldn't complain, but it would crash at runtime with a `ClassCastException`. Generics move that error from runtime to compile time.",
+      "example": "// Pre-Java 5 (No Generics)\nList list = new ArrayList();\nlist.add(\"Hello\");\nString s = (String) list.get(0); // Explicit cast required\n\n// Java 5+ (Generics)\nList<String> listGen = new ArrayList<>();\nlistGen.add(\"Hello\");\nString sGen = listGen.get(0); // Safe and no cast needed"
+    },
+    {
+      "question": "What is Type Erasure?",
+      "answer": "Type Erasure is the process by which the Java compiler removes all Generic type information during compilation to ensure bytecode backward compatibility with pre-Java 5 code. All type parameters are replaced by their bounds (or `Object` if unbounded). Because of type erasure, Generics are strictly a compile-time feature; the JVM at runtime has absolutely no knowledge of the specific type parameters.",
+      "example": "// What you write:\nList<String> list = new ArrayList<String>();\nlist.add(\"Hi\");\nString s = list.get(0);\n\n// What the compiler turns it into (Bytecode / Runtime view):\nList list = new ArrayList();\nlist.add(\"Hi\");\nString s = (String) list.get(0);"
+    },
+    {
+      "question": "Can you use primitive types as Generic Type Parameters?",
+      "answer": "No, you cannot. Generics are implemented using Type Erasure, meaning type parameters are erased and replaced with `Object`. Primitive types (like `int`, `double`, `boolean`) do not inherit from `Object`. Therefore, you must use their corresponding wrapper classes (`Integer`, `Double`, `Boolean`). The Java compiler uses Autoboxing/Unboxing to convert between them behind the scenes.",
+      "example": "// List<int> invalidList = new ArrayList<>(); // COMPILE ERROR\n\nList<Integer> validList = new ArrayList<>(); // Correct\nvalidList.add(5); // Autoboxes primitive 5 to Integer.valueOf(5)"
+    },
+    {
+      "question": "What is a Bounded Type Parameter?",
+      "answer": "A bounded type parameter limits the types that can be used as arguments for a generic parameter. You use the `extends` keyword (even for interfaces) to set an Upper Bound. This allows you to invoke methods defined by the bound inside your generic class/method.",
+      "example": "// T must be a Number or a subclass of Number\npublic static <T extends Number> double getDoubleValue(T number) {\n    // Now we can safely call Number methods on T\n    return number.doubleValue(); \n}"
+    },
+    {
+      "question": "Can a Type Parameter have multiple bounds?",
+      "answer": "Yes, a type parameter can have multiple bounds. However, because Java does not support multiple inheritance of classes, the bounds can consist of at most one Class, and it must be listed first, followed by any number of Interfaces separated by the `&` symbol.",
+      "example": "// T must extend the class Animal AND implement Comparable and Serializable\nclass Zoo<T extends Animal & Comparable<T> & Serializable> {\n    T occupant;\n}"
+    },
+    {
+      "question": "What is the Diamond Operator `<>`?",
+      "answer": "Introduced in Java 7, the Diamond Operator allows the compiler to infer the generic type parameters of a constructor based on the variable declaration on the left side. This drastically reduces boilerplate code.",
+      "example": "// Pre-Java 7\nMap<String, List<Integer>> map = new HashMap<String, List<Integer>>();\n\n// Java 7+ (Diamond Operator)\nMap<String, List<Integer>> map = new HashMap<>();"
+    },
+    {
+      "question": "What is a Wildcard (`?`) in Generics?",
+      "answer": "A wildcard represents an 'unknown type'. It is highly useful in method parameters when the exact type doesn't matter, or when you want to accept a family of types. However, wildcards come with restrictions, particularly around adding elements to a collection, because the compiler cannot guarantee type safety when the type is unknown.",
+      "example": "public void printList(List<?> list) {\n    for (Object obj : list) {\n        System.out.println(obj);\n    }\n    // list.add(\"String\"); // COMPILE ERROR: Cannot add to wildcard list\n}"
+    },
+    {
+      "question": "Explain Upper Bounded Wildcards (`<? extends T>`).",
+      "answer": "An Upper Bounded Wildcard restricts the unknown type to be a specific type or a subtype of that type. It follows the PECS principle (Producer Extends). You use it when you only want to READ (produce) data from the generic structure. You cannot safely WRITE (add) to a structure using `? extends` (except `null`) because the compiler doesn't know the exact subtype at compile time.",
+      "example": "public void processNumbers(List<? extends Number> list) {\n    // Safe to read: we know everything is at least a Number\n    Number n = list.get(0); \n    \n    // ERROR: What if list is a List<Double>? Adding an Integer is unsafe.\n    // list.add(10); \n}"
+    },
+    {
+      "question": "Explain Lower Bounded Wildcards (`<? super T>`).",
+      "answer": "A Lower Bounded Wildcard restricts the unknown type to be a specific type or a *supertype* of that type. It follows the PECS principle (Consumer Super). You use it when you want to WRITE (consume) data into the structure. You can safely add instances of `T` (or its subtypes) to the collection, but reading from it only guarantees returning an `Object`.",
+      "example": "public void addIntegers(List<? super Integer> list) {\n    // Safe to write: list could be List<Integer>, List<Number>, or List<Object>.\n    // In all cases, an Integer is mathematically allowed to be added.\n    list.add(10); \n    \n    // Unsafe to read as specific type, only guaranteed to be an Object\n    // Integer n = list.get(0); // ERROR\n}"
+    },
+    {
+      "question": "What is PECS?",
+      "answer": "PECS stands for \"Producer Extends, Consumer Super.\" It is a mnemonic device coined by Joshua Bloch in Effective Java to help developers know which wildcard to use. \n- Use `? extends T` when the collection acts as a PRODUCER of data (you are reading from it).\n- Use `? super T` when the collection acts as a CONSUMER of data (you are writing to it).\n- Use neither if you need to both read and write specific types.",
+      "example": "public static <T> void copy(List<? super T> dest, List<? extends T> src) {\n    for (T element : src) {\n        dest.add(element);\n    }\n}"
+    },
+    {
+      "question": "Can you instantiate an array of a Generic Type?",
+      "answer": "No, you cannot directly instantiate an array of a generic type `T[]` or `List<String>[]` because of Type Erasure. Arrays are reified (they hold their exact type at runtime). Generics are erased at runtime. If Java allowed generic arrays, the JVM wouldn't be able to enforce `ArrayStoreException` at runtime, completely breaking the type safety system.",
+      "example": "// T[] array = new T[10]; // COMPILE ERROR\n// List<String>[] lists = new List<String>[10]; // COMPILE ERROR\n\n// Workaround using Object array and casting:\nT[] array = (T[]) new Object[10]; // Compiles with a warning"
+    },
+    {
+      "question": "Is `List<Object>` the same as `List<?>`?",
+      "answer": "No. `List<Object>` is a specific list that can hold literally anything, and you can add any object to it. `List<?>` is a list of an *unknown* specific type. You can read `Object`s from it, but you CANNOT add anything to it (except `null`), because the compiler doesn't know what type the list actually is (it could be a `List<Integer>`, and adding a String would be unsafe).",
+      "example": "List<Object> objList = new ArrayList<>();\nobjList.add(\"Hello\"); // Valid\nobjList.add(10); // Valid\n\nList<?> wildcardList = new ArrayList<String>();\n// wildcardList.add(\"Hello\"); // COMPILE ERROR!\nwildcardList.add(null); // Valid (null belongs to all types)"
+    },
+    {
+      "question": "Is Generics type system Covariant or Invariant?",
+      "answer": "Generics in Java are strictly **Invariant**. This means that even if `String` is a subtype of `Object`, a `List<String>` is NOT a subtype of `List<Object>`. You cannot assign a `List<String>` to a variable of type `List<Object>`. (Unlike Java Arrays, which are Covariant).",
+      "example": "String[] strArray = new String[5];\nObject[] objArray = strArray; // Valid (Arrays are Covariant)\n// objArray[0] = 5; // Throws ArrayStoreException at runtime\n\nList<String> strList = new ArrayList<>();\n// List<Object> objList = strList; // COMPILE ERROR (Generics are Invariant)"
+    },
+    {
+      "question": "How do you create a Generic Method?",
+      "answer": "To create a generic method, you place the type parameter declaration `<T>` before the return type of the method. The scope of this generic type parameter is limited exclusively to the method itself, and it is completely independent of any type parameters declared on the class.",
+      "example": "public class Utils {\n    // Generic Method inside a Non-Generic Class\n    public static <T> void swap(T[] array, int i, int j) {\n        T temp = array[i];\n        array[i] = array[j];\n        array[j] = temp;\n    }\n}"
+    },
+    {
+      "question": "Can you use `instanceof` with Generic types?",
+      "answer": "Because of Type Erasure, you cannot use `instanceof` with specific parameterized generic types (like `List<String>`), because at runtime, the JVM only sees `List`. You can, however, use `instanceof` with the unparameterized raw type (like `List`) or with an unbounded wildcard (`List<?>`).",
+      "example": "Object obj = new ArrayList<String>();\n\n// if (obj instanceof List<String>) // COMPILE ERROR\n\nif (obj instanceof List<?>) { // Valid\n    System.out.println(\"It's a List\");\n}"
+    },
+    {
+      "question": "What is a Raw Type?",
+      "answer": "A raw type is the name of a generic class or interface without any type arguments (e.g., using `List` instead of `List<String>`). Raw types exist solely for backward compatibility with pre-Java 5 code. Using raw types in modern Java is highly discouraged because it completely bypasses the generic type safety system, throwing away all the benefits of generics.",
+      "example": "List rawList = new ArrayList<String>(); // Valid, but bad practice\nrawList.add(10); // Allowed by compiler, breaking type safety\n// String s = (String) rawList.get(0); // Will throw ClassCastException"
+    },
+    {
+      "question": "Can you throw or catch a generic exception?",
+      "answer": "No. A generic class cannot extend `Throwable` (either directly or indirectly). Therefore, you cannot create, throw, or catch generic exception classes. This is because exception handling occurs at runtime, and Type Erasure removes generic type information, making it impossible for the JVM catch blocks to distinguish between `MyException<String>` and `MyException<Integer>`.",
+      "example": "// class MyGenericException<T> extends Exception { } // COMPILE ERROR"
+    },
+    {
+      "question": "What happens if a class extends a generic class and overrides a method?",
+      "answer": "When a subclass extends a generic class and provides concrete types, the compiler generates a hidden \"Bridge Method\" in the bytecode to preserve the polymorphism of the overridden method while satisfying Type Erasure. The bridge method accepts the raw type (`Object`) and then delegates the call to your strongly-typed overridden method.",
+      "example": "class Node<T> { public void setData(T data) {} }\nclass MyNode extends Node<Integer> { \n    public void setData(Integer data) {}\n}\n// Bytecode internally creates:\n// public void setData(Object data) { setData((Integer) data); }"
+    },
+    {
+      "question": "How do you enforce that a generic type `T` implements a specific interface?",
+      "answer": "You enforce interface implementation for generic types using the `extends` keyword (even though it's an interface, not a class). If you need it to implement multiple interfaces, use the `&` operator.",
+      "example": "// T MUST implement the Comparable interface\npublic <T extends Comparable<T>> T findMax(T a, T b) {\n    return a.compareTo(b) > 0 ? a : b;\n}"
+    },
+    {
+      "question": "Why does `Class<T>` exist?",
+      "answer": "Since generic type information is erased at runtime, you sometimes need a way to pass type information manually into a method so the runtime environment can make decisions based on the type (like instantiating a new object via reflection). This pattern is called a 'Type Token'. `Class<T>` provides this token safely.",
+      "example": "public <T> T createInstance(Class<T> clazz) throws Exception {\n    // The Class<T> parameter allows us to instantiate the type dynamically\n    return clazz.getDeclaredConstructor().newInstance();\n}\n// Usage:\n// String s = createInstance(String.class);"
+    }
+  ],
+  "tags": ["generics", "type-safety", "wildcard", "pecs", "erasure"]
+}

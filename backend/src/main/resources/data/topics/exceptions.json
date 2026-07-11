@@ -1,0 +1,119 @@
+{
+  "title": "Exception Handling",
+  "slug": "exceptions",
+  "category": "Core Java",
+  "difficulty": "Beginner",
+  "description": "Understand checked vs unchecked exceptions, custom exceptions, try-with-resources, and best practices for writing resilient code.",
+  "content": "## Exception Handling in Java\n\nJava uses a robust exception handling mechanism with `try-catch-finally` blocks, a strict exception hierarchy, and custom exceptions to handle runtime anomalies gracefully.\n\n### Exception Hierarchy\n- `Throwable` - The root class.\n  - `Error` (e.g., `OutOfMemoryError`, `StackOverflowError`) - Serious problems that a reasonable application should not try to catch. They indicate catastrophic JVM failures.\n  - `Exception` - Conditions that a reasonable application might want to catch.\n    - **Checked Exceptions** (e.g., `IOException`, `SQLException`) - Checked at compile time. Must be declared in the `throws` clause or handled with `try-catch`.\n    - **Unchecked Exceptions** / `RuntimeException` (e.g., `NullPointerException`, `IllegalArgumentException`) - Unchecked at compile time. Usually represent programming bugs.\n\n### Modern Exception Handling Features\n- **Try-With-Resources (Java 7)**: Automatically closes resources that implement `AutoCloseable`. Avoids nested `finally` blocks and resource leaks.\n- **Multi-Catch (Java 7)**: Catching multiple exceptions in a single `catch` block using the pipe `|` operator.\n- **Helpful NullPointerExceptions (Java 14)**: The JVM provides precise details about exactly which variable was null.",
+  "codeExamples": [
+    {
+      "title": "Exception Handling Best Practices",
+      "language": "java",
+      "code": "import java.io.*;\n\n// Custom Exception\nclass UserNotFoundException extends RuntimeException {\n    public UserNotFoundException(String userId) {\n        super(\"User not found: \" + userId);\n    }\n}\n\npublic class Main {\n    // Try-with-resources (Java 7+)\n    static void readFile(String path) {\n        try (var reader = new BufferedReader(new FileReader(path))) {\n            System.out.println(reader.readLine());\n        } catch (FileNotFoundException e) {\n            System.err.println(\"File missing: \" + e.getMessage());\n        } catch (IOException e) {\n            System.err.println(\"I/O error: \" + e.getMessage());\n        } \n        // No finally block needed to close the reader!\n    }\n\n    // Multi-catch (Java 7+)\n    static void process(String input) {\n        try {\n            int num = Integer.parseInt(input);\n            int result = 100 / num;\n        } catch (NumberFormatException | ArithmeticException e) {\n            System.err.println(\"Invalid input: \" + e.getClass().getSimpleName());\n        }\n    }\n\n    public static void main(String[] args) {\n        process(\"0\");\n    }\n}",
+      "explanation": "This example demonstrates creating a custom unchecked exception, using try-with-resources to ensure the BufferedReader is safely closed, and utilizing multi-catch to handle NumberFormatException and ArithmeticException in one block."
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "What is the difference between Checked and Unchecked Exceptions?",
+      "answer": "Checked exceptions inherit from `Exception` (but not `RuntimeException`). They are enforced by the compiler; you MUST either catch them in a `try-catch` block or declare them in the method signature using `throws`. They represent external conditions outside the program's control (like network failures or missing files). Unchecked exceptions inherit from `RuntimeException`. The compiler does not force you to handle them. They usually represent programming errors (like `NullPointerException` or `IndexOutOfBoundsException`).",
+      "example": "// Checked Exception - must be handled or declared\nvoid readFile() throws IOException {\n    FileReader fr = new FileReader(\"test.txt\"); // Throws checked FileNotFoundException\n}\n\n// Unchecked Exception - no requirement to handle\nvoid printLength(String s) {\n    System.out.println(s.length()); // Could throw unchecked NullPointerException\n}"
+    },
+    {
+      "question": "What is the difference between throw and throws?",
+      "answer": "`throw` is used inside a method body to explicitly trigger and \"throw\" an actual exception object at runtime. `throws` is used in a method signature to declare to the compiler (and callers) that this method *might* throw one or more checked exceptions, forcing the caller to handle them.",
+      "example": "public void validateAge(int age) throws Exception { // 'throws' in signature\n    if (age < 18) {\n        throw new Exception(\"Underage\"); // 'throw' triggers the exception\n    }\n}"
+    },
+    {
+      "question": "Does the finally block always execute?",
+      "answer": "A `finally` block will almost always execute after the `try` or `catch` block finishes, regardless of whether an exception was thrown. It even executes if there is a `return`, `break`, or `continue` statement inside the `try` block. The ONLY scenarios where `finally` does NOT execute are: 1) `System.exit(0)` is called. 2) The JVM crashes or loses power. 3) An infinite loop or deadlock occurs in the `try` block. 4) A fatal error (like `OutOfMemoryError`) brings down the thread.",
+      "example": "int test() {\n    try {\n        return 1;\n    } finally {\n        System.out.println(\"This prints BEFORE the return value is actually yielded!\");\n    }\n}"
+    },
+    {
+      "question": "What happens if both try and finally blocks return a value?",
+      "answer": "If both the `try` block and the `finally` block contain a `return` statement, the `return` statement in the `finally` block completely overrides the `return` statement in the `try` block. This is generally considered bad practice because it swallows the original intent of the method (and can also silently swallow thrown exceptions if the `finally` block returns normally).",
+      "example": "int getNumber() {\n    try {\n        return 10;\n    } finally {\n        return 20; // This overrides the 10. The method returns 20.\n    }\n}"
+    },
+    {
+      "question": "What is Try-With-Resources?",
+      "answer": "Introduced in Java 7, Try-With-Resources is a feature that guarantees the automatic closing of resources (like files, database connections, sockets) at the end of the statement, preventing resource leaks. To use it, the resource being instantiated inside the `try()` parentheses must implement the `AutoCloseable` or `Closeable` interface. It eliminates the need for messy nested `finally` blocks.",
+      "example": "// No finally block needed. 'conn' is closed automatically.\ntry (Connection conn = DriverManager.getConnection(url)) {\n    // query database\n} catch (SQLException e) {\n    // handle exception\n}"
+    },
+    {
+      "question": "What is Exception Chaining?",
+      "answer": "Exception chaining (or wrapping) is the practice of catching a lower-level exception (like an `IOException`) and throwing a new, higher-level custom exception (like a `DatabaseException`) that is more meaningful to the business logic. You pass the original exception to the constructor of the new exception as the \"cause\". This preserves the original stack trace for debugging purposes.",
+      "example": "try {\n    Files.readString(Path.of(\"config.txt\"));\n} catch (IOException e) {\n    // Throw new exception, passing 'e' as the root cause\n    throw new ConfigurationLoadException(\"Failed to load config\", e);\n}"
+    },
+    {
+      "question": "Can you catch an Error in Java?",
+      "answer": "Yes, syntactically you can catch an `Error` (e.g., `catch (OutOfMemoryError e)`) or catch its parent `Throwable`. However, it is an extreme anti-pattern. `Error` represents severe JVM-level conditions that an application should never attempt to recover from. If an `OutOfMemoryError` or `StackOverflowError` occurs, the application is in a catastrophically unstable state and should be allowed to crash and terminate gracefully.",
+      "example": "try {\n    recursiveFunction();\n} catch (StackOverflowError e) {\n    // BAD PRACTICE. The JVM stack is exhausted, \n    // further execution is unpredictable.\n}"
+    },
+    {
+      "question": "What is Multi-Catch? Are there any rules?",
+      "answer": "Multi-catch, introduced in Java 7, allows you to catch multiple distinct exceptions in a single `catch` block using the pipe `|` operator, reducing code duplication. Rule: You cannot catch exceptions that have a parent-child relationship in the same multi-catch block. For example, `catch (FileNotFoundException | IOException e)` will cause a compilation error because `FileNotFoundException` is a subclass of `IOException`.",
+      "example": "// CORRECT: Exceptions are siblings in the hierarchy\ncatch (SQLException | IOException e) { \n    log(e);\n}\n\n// INCORRECT: Hierarchy collision\n// catch (FileNotFoundException | IOException e) { }"
+    },
+    {
+      "question": "Why is it a bad practice to catch `Exception` or `Throwable`?",
+      "answer": "Catching generic `Exception` or `Throwable` is bad practice because it acts as a blanket net that swallows *all* errors, including `RuntimeExceptions` (like NullPointer) or severe `Errors` that you did not anticipate and should not be recovering from. It masks bugs in the code. You should always catch the most specific exceptions possible so you only handle the failure modes you understand.",
+      "example": "try {\n    processFile();\n} catch (Exception e) { \n    // BAD: This hides NullPointerExceptions and makes debugging a nightmare.\n    System.out.println(\"Something went wrong\"); \n}"
+    },
+    {
+      "question": "When creating a custom exception, should it be Checked or Unchecked?",
+      "answer": "In modern Java frameworks (like Spring or Hibernate), the standard practice is to make almost all custom exceptions Unchecked (`extends RuntimeException`). Checked exceptions force boilerplate `try-catch` blocks or `throws` declarations at every layer of the application, breaking encapsulation and bloating the code. Only use Checked exceptions if the calling client can realistically take a specific, alternative action to recover from the error.",
+      "example": "class UserNotFoundException extends RuntimeException {\n    // Modern approach: Unchecked. \n    // Let a global exception handler deal with it.\n}"
+    },
+    {
+      "question": "What happens to the thread if an exception is completely unhandled?",
+      "answer": "If an exception is thrown and travels all the way up the call stack without being caught by any `try-catch` block, the thread that threw the exception will immediately terminate. The JVM will print the exception stack trace to `System.err`. If it was the main thread, the application will crash. If it was a background thread, the application might continue running, but that specific thread is dead.",
+      "example": "public static void main(String[] args) {\n    new Thread(() -> {\n        throw new RuntimeException(\"Boom\"); // This thread dies silently\n    }).start();\n    System.out.println(\"Main thread continues running\");\n}"
+    },
+    {
+      "question": "What is the order of catch blocks?",
+      "answer": "Catch blocks must be ordered from the most specific (subclasses) to the most general (superclasses). If you place a `catch (Exception e)` block before a `catch (IOException e)` block, the compiler will throw an unreachable code error, because the `Exception` block will act as a catch-all and swallow the `IOException` before the second block can ever execute.",
+      "example": "try {\n    // ...\n} catch (FileNotFoundException e) {\n    // Specific subclass MUST come first\n} catch (IOException e) {\n    // Parent class MUST come second\n} catch (Exception e) {\n    // Grandparent class MUST come last\n}"
+    },
+    {
+      "question": "Can you throw an exception from a finally block?",
+      "answer": "Yes, you can throw an exception from a `finally` block, but it is extremely dangerous. If the `try` block threw an exception (let's say Exception A), and the `finally` block throws Exception B during cleanup, Exception A is completely lost and swallowed. The caller will only see Exception B, losing the original root cause. Try-with-resources solves this issue by \"suppressing\" secondary exceptions and attaching them to the primary exception.",
+      "example": "try {\n    throw new Exception(\"Primary Error\");\n} finally {\n    throw new Exception(\"Cleanup Error\"); // The caller only sees this one!\n}"
+    },
+    {
+      "question": "What are Suppressed Exceptions?",
+      "answer": "Introduced in Java 7 alongside try-with-resources. If the `try` block throws an exception, and the automatic `close()` method of the resource also throws an exception, the exception from the `try` block is thrown to the caller, and the exception from the `close()` method is \"suppressed\" and attached to the primary exception. You can access it via `primaryException.getSuppressed()`.",
+      "example": "try (MyResource r = new MyResource()) {\n    throw new RuntimeException(\"Main logic failed\");\n} catch (Exception e) {\n    // e is \"Main logic failed\"\n    // e.getSuppressed()[0] contains the exception thrown by r.close()\n}"
+    },
+    {
+      "question": "How does method overriding interact with throws declarations?",
+      "answer": "When an overriding method in a subclass declares exceptions, it cannot declare *new* or *broader* checked exceptions than the superclass method. It can declare the same exceptions, subclasses of those exceptions, or no exceptions at all. This honors the Liskov Substitution Principle. However, this rule does not apply to Unchecked exceptions; an overriding method can throw any unchecked exception.",
+      "example": "class Parent {\n    void doWork() throws IOException {}\n}\nclass Child extends Parent {\n    // VALID: FileNotFoundException is a subclass of IOException\n    // VALID: Throwing no checked exceptions is fine\n    // INVALID: void doWork() throws Exception {} (Exception is broader)\n    @Override\n    void doWork() throws FileNotFoundException, NullPointerException {}\n}"
+    },
+    {
+      "question": "What is the difference between NoClassDefFoundError and ClassNotFoundException?",
+      "answer": "`ClassNotFoundException` is a checked exception thrown during runtime when you explicitly try to load a class via reflection (e.g., `Class.forName()`) and it is missing from the classpath. `NoClassDefFoundError` is a fatal `Error` thrown when a class was successfully compiled (it was present at compile time), but the JVM cannot find the `.class` file during runtime execution.",
+      "example": "// Throws ClassNotFoundException\nClass.forName(\"com.mysql.jdbc.Driver\");\n\n// Throws NoClassDefFoundError\nMyDependency obj = new MyDependency(); // Class missing at runtime"
+    },
+    {
+      "question": "What is an ExceptionInInitializerError?",
+      "answer": "An `ExceptionInInitializerError` is thrown if an unhandled RuntimeException occurs during the execution of a static initializer block or during the assignment of a static variable. Because this happens while the class is being loaded into memory by the ClassLoader, it wraps the underlying exception and completely prevents the class from being loaded, often leading to subsequent `NoClassDefFoundError`s.",
+      "example": "class Config {\n    static int data;\n    static {\n        int x = 0;\n        data = 100 / x; // Throws ArithmeticException wrapped in ExceptionInInitializerError\n    }\n}"
+    },
+    {
+      "question": "What is a 'stack trace' and why is it important?",
+      "answer": "A stack trace is a snapshot of the active method calls (stack frames) at the exact moment an exception was thrown. It starts with the method where the error originated and traces backwards through all the methods that called it, up to `main()`. It is the single most important tool for debugging, as it tells you exactly what file and what line number caused the crash, and the path the program took to get there.",
+      "example": "try {\n    throw new RuntimeException(\"Failed\");\n} catch (Exception e) {\n    e.printStackTrace(); // Prints the entire sequence of method calls\n}"
+    },
+    {
+      "question": "How do you handle exceptions in Java 8 Streams?",
+      "answer": "Stream methods like `map()` do not accept lambda functions that throw checked exceptions. You must either handle the exception inside the lambda with a bulky `try-catch`, or write a wrapper utility method that catches the checked exception and rethrows it as an unchecked exception so the stream pipeline isn't polluted with error-handling logic.",
+      "example": "List<String> paths = List.of(\"a.txt\", \"b.txt\");\n// Cannot do .map(Files::readString) because it throws IOException\n\npaths.stream().map(path -> {\n    try { return Files.readString(Path.of(path)); }\n    catch (IOException e) { throw new RuntimeException(e); }\n}).toList();"
+    },
+    {
+      "question": "Is it possible to rethrow an exception without adding a throws clause?",
+      "answer": "Yes, if the exception is an unchecked exception (`RuntimeException` or `Error`). Also, starting in Java 7, if you catch a generic `Exception e` but the compiler can deduce that the try block only throws a specific checked exception (e.g., `IOException`), you can rethrow `e` and only declare `throws IOException` in the method signature (this feature is known as 'Rethrowing with more inclusive type checking').",
+      "example": "public void parse() throws IOException {\n    try {\n        new FileReader(\"data.txt\");\n    } catch (Exception e) {\n        // Compiler knows this must be an IOException\n        throw e; \n    }\n}"
+    }
+  ],
+  "tags": ["exceptions", "try-catch", "error-handling", "custom-exception", "checked-unchecked"]
+}
